@@ -40,6 +40,11 @@ abstract class Tribe__Events__Importer__File_Importer {
 	protected $featured_image_uploader;
 
 	/**
+	 * @var string The meta field name to store and retrieve the manually defined uid.
+	 */
+	protected $uid;
+
+	/**
 	 * @param string                         $type
 	 * @param Tribe__Events__Importer__File_Reader $file_reader
 	 *

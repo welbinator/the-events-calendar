@@ -62,6 +62,7 @@ class Tribe__Events__Importer__Column_Mapper {
 	private function get_event_column_names() {
 		$column_names = array(
 			'event_name'              => esc_html__( 'Event Name', 'the-events-calendar' ),
+			'event_uid'               => esc_html__( 'Event UID', 'the-events-calendar' ),
 			'event_description'       => esc_html__( 'Event Description', 'the-events-calendar' ),
 			'event_excerpt'           => esc_html__( 'Event Excerpt', 'the-events-calendar' ),
 			'event_start_date'        => esc_html__( 'Event Start Date', 'the-events-calendar' ),
@@ -74,7 +75,9 @@ class Tribe__Events__Importer__Column_Mapper {
 			'event_sticky'            => esc_html__( 'Event Sticky in Month View', 'the-events-calendar' ),
 			'feature_event'           => esc_html__( 'Feature Event', 'the-events-calendar' ),
 			'event_venue_name'        => esc_html__( 'Event Venue Name', 'the-events-calendar' ),
+			'event_venue_uid'         => esc_html__( 'Event Venue UID', 'the-events-calendar' ),
 			'event_organizer_name'    => esc_html__( 'Event Organizer Name(s) or ID(s)', 'the-events-calendar' ),
+			'event_organizer_uid'     => esc_html__( 'Event Organizer UID(s)', 'the-events-calendar' ),
 			'event_show_map_link'     => esc_html__( 'Event Show Map Link', 'the-events-calendar' ),
 			'event_show_map'          => esc_html__( 'Event Show Map', 'the-events-calendar' ),
 			'event_cost'              => esc_html__( 'Event Cost', 'the-events-calendar' ),
@@ -99,6 +102,7 @@ class Tribe__Events__Importer__Column_Mapper {
 	private function get_venue_column_names() {
 		$column_names = array(
 			'venue_name'        => esc_html__( 'Venue Name', 'the-events-calendar' ),
+			'venue_uid'         => esc_html__( 'Venue UID', 'the-events-calendar' ),
 			'venue_description' => esc_html__( 'Venue Description', 'the-events-calendar' ),
 			'venue_country'     => esc_html__( 'Venue Country', 'the-events-calendar' ),
 			'venue_address'     => esc_html__( 'Venue Address', 'the-events-calendar' ),
@@ -122,6 +126,7 @@ class Tribe__Events__Importer__Column_Mapper {
 	private function get_organizer_column_names() {
 		$column_names = array(
 			'organizer_name'        => esc_html__( 'Organizer Name', 'the-events-calendar' ),
+			'organizer_uid'         => esc_html__( 'Organizer UID', 'the-events-calendar' ),
 			'organizer_description' => esc_html__( 'Organizer Description', 'the-events-calendar' ),
 			'organizer_email'       => esc_html__( 'Organizer Email', 'the-events-calendar' ),
 			'organizer_website'     => esc_html__( 'Organizer Website', 'the-events-calendar' ),

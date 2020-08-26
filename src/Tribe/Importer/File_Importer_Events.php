@@ -8,6 +8,11 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 	protected $required_fields = array( 'event_name', 'event_start_date' );
 
 	/**
+	 * @var string The meta field name to store and retrieve the manually defined uid.
+	 */
+	protected $uid = '_tribe_event_uid';
+
+	/**
 	 * Searches the database for an existing event matching the one described
 	 * by the specified record.
 	 *
@@ -20,6 +25,7 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 		$start_date = $this->get_event_start_date( $record );
 		$end_date   = $this->get_event_end_date( $record );
 		$all_day    = $this->get_boolean_value_by_key( $record, 'event_all_day' );
+		$uid        = $this->has_value_by_key( $record, 'event_uid' );
 
 		// Base query - only the meta query will be different
 		$query_args = array(

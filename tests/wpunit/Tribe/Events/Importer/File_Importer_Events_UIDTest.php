@@ -4,16 +4,69 @@ namespace Tribe\Events\Importer;
 
 require_once 'File_Importer_EventsTest.php';
 
+use Tribe\Events\Test\Factories\Venue;
+use Tribe\Events\Test\Factories\Organizer;
 
 class File_Importer_Events_UIDTest extends File_Importer_EventsTest {
 
+	public function setUp() {
+		parent::setUp();
+		static::factory()->venue     = new Venue();
+		static::factory()->organizer = new Organizer();
+	}
+
+	public function get_venue_name_and_id() {
+		$venue_name = 'Venue Export/Import Business';
+		$venue_args = [
+			'_VenueAddress'       => '6500 Springfield Mall',
+			'_VenueCity'          => 'Springfield',
+			'_VenueStateProvince' => 'VA',
+			'_VenueZip'           => '22150',
+			'_VenueCountry'       => 'US',
+			'_tribe_venue_uid'    => 'venueUID1',
+		];
+		$venue      = $this->factory()->venue->create( [ 'post_title' => $venue_name, 'meta_input' => $venue_args ] );
+
+		return [
+			'id'   => $venue,
+			'name' => $venue_name,
+		];
+	}
+
+	public function get_organizer_name_and_id() {
+		$organizer_name = 'Organizer Import 1';
+		$organizer_args = [
+			'_OrganizerEmail'      => '6500 Springfield Mall',
+			'_OrganizerWebsite'    => 'Springfield',
+			'_OrganizerPhone'      => 'VA',
+			'_tribe_organizer_uid' => 'organizerUID1',
+		];
+		$organizer      = $this->factory()->organizer->create( [ 'post_title' => $organizer_name, 'meta_input' => $organizer_args ] );
+
+		return [
+			'id'   => $organizer,
+			'name' => $organizer_name,
+		];
+	}
+
 	/**
 	 * @test
-	 * it should not mark record as invalid if missing content
 	 */
-	public function it_should_not_mark_record_as_invalid_if_missing_content() {
+	public function it_should_import_with_no_uid() {
+
+		$sut = $this->make_instance();
+
+		$post_id = $sut->import_next_row();
+
+		$this->assertNotFalse( $post_id );
+	}
+
+	/**
+	 * @test
+	 */
+	public function it_should_import_with_a_uid_and_save_to_meta() {
 		$this->data        = [
-			'uid_1' => '',
+			'uid_1' => 'mt22blue',
 		];
 		$this->field_map[] = 'event_uid';
 
@@ -21,7 +74,123 @@ class File_Importer_Events_UIDTest extends File_Importer_EventsTest {
 
 		$post_id = $sut->import_next_row();
 
+		var_dump( $post_id );
+
 		$this->assertNotFalse( $post_id );
+		$this->assertEquals( 'mt22blue', get_post_meta( $post_id, '_tribe_event_uid', true ) );
+	}
+
+	/**
+	 * @test
+	 */
+	public function it_should_update_existing_event_with_uid() {
+		$this->data        = [
+			'uid_1'         => 'mt22bluetest',
+			'name_1'        => 'Modern Tribe\'s Excellent Adventure',
+			'start_date_1'  => '11/19/21',
+			'end_date_1'    => '11/19/21',
+			//'all_day_1' => 'false',
+			'description_1' => 'Updated event description',
+		];
+		$this->field_map[] = 'event_uid';
+
+		$sut = $this->make_instance( 'event-uid' );
+
+		$first_post_id = $sut->import_next_row();
+		$this->assertNotFalse( $first_post_id );
+
+		//clean_post_cache( $first_post_id );
+
+		var_dump( $first_post_id );
+
+		$this->data = [
+			'uid_1'         => 'mt22bluetest',
+			'name_1'        => 'New Event Name',
+			'start_date_1'  => '11/25/21',
+			'end_date_1'    => '11/25/21',
+			//'all_day_1' => 'false',
+			'description_1' => 'Updated event description',
+		];
+
+		$sut = $this->make_instance( 'event-uid' );
+
+		$second_post_id = $sut->import_next_row();
+
+		var_dump( $second_post_id );
+
+		$this->assertEquals( $first_post_id, $second_post_id );
+		$this->assertEquals( 'mt22blue', get_post_meta( $second_post_id, '_tribe_event_uid', true ) );
+	}
+
+	/**
+	 * @test
+	 */
+	public function it_should_add_a_venue_using_the_venue_uid() {
+		$venue = $this->get_venue_name_and_id();
+
+		$this->data        = [
+			'uid_1'         => 'mt22bluetest',
+			'name_1'        => 'Modern Tribe\'s Excellent Adventure',
+			'start_date_1'  => '11/19/21',
+			'end_date_1'    => '11/19/21',
+			//'all_day_1' => 'false',
+			'description_1' => 'Updated event description',
+			'venue_uid_1'   => 'venueUID1',
+		];
+		$this->field_map[] = 'event_uid';
+
+		$sut = $this->make_instance( 'event-uid' );
+
+		$first_post_id = $sut->import_next_row();
+
+		$this->assertNotFalse( $first_post_id );
+		$this->assertEquals( $venue['id'], get_post_meta( $first_post_id, '_EventVenueID', true ) );
+	}
+
+	/**
+	 * @test
+	 */
+	public function it_should_add_a_venue_using_the_venue_uid_even_when_venue_name_included() {
+
+	}
+
+	/**
+	 * @test
+	 */
+	public function it_should_add_a_organizer_using_the_organizer_uid() {
+		$organizer = $this->get_organizer_name_and_id();
+
+		$this->data        = [
+			'uid_1'           => 'mt22bluetest',
+			'name_1'          => 'Modern Tribe\'s Excellent Adventure',
+			'start_date_1'    => '11/19/21',
+			'end_date_1'      => '11/19/21',
+			//'all_day_1' => 'false',
+			'description_1'   => 'Updated event description',
+			'organizer_uid_1' => 'organizerUID1',
+		];
+		$this->field_map[] = 'event_uid';
+
+		$sut = $this->make_instance( 'event-uid' );
+
+		$first_post_id = $sut->import_next_row();
+
+		$this->assertNotFalse( $first_post_id );
+		$this->assertEquals( $organizer['id'], get_post_meta( $first_post_id, '_EventOrganizerID', true ) );
+	}
+
+	/**
+	 * @test
+	 */
+	public function it_should_add_multiple_organizers_using_the_organizer_uid() {
+
+	}
+
+	/**
+	 * @test
+	 */
+	public function it_should_add_a_organizer_using_the_organizer_uid_even_when_organizer_id_included() {
+
 	}
 
 	/**
@@ -40,132 +209,4 @@ class File_Importer_Events_UIDTest extends File_Importer_EventsTest {
 	 *  event organizers accepts and or id in comma separated list
 	 */
 
-
-
-
-
-
-
-	/**
-	 * @test
-	 * it should insert event post content if description is provided
-	 */
-	public function it_should_insert_event_post_content_if_description_is_provided() {
-		$this->data = [
-			'uid_1' => 'Some description',
-		];
-
-		$sut = $this->make_instance( 'event-uid' );
-
-		$post_id = $sut->import_next_row();
-
-		$this->assertEquals( 'Some description', get_post( $post_id )->post_content );
-	}
-
-	/**
-	 * @test
-	 * it should overwrite post content when reimporting
-	 */
-	public function it_should_overwrite_post_content_when_reimporting() {
-		$this->data = [
-			'uid_1' => 'First description',
-		];
-
-		$sut = $this->make_instance( 'event-uid' );
-
-		$post_id = $sut->import_next_row();
-
-		$this->assertEquals( 'First description', get_post( $post_id )->post_content );
-
-		$this->data = [
-			'uid_1' => 'New description',
-		];
-
-		$sut = $this->make_instance( 'event-uid' );
-
-		$reimport_post_id = $sut->import_next_row();
-
-		$this->assertEquals( $post_id, $reimport_post_id );
-		$this->assertEquals( 'New description', get_post( $post_id )->post_content );
-	}
-
-	/**
-	 * @test
-	 * it should restore an event description that has been emptied
-	 */
-	public function it_should_restore_an_event_description_that_has_been_emptied() {
-		$this->data = [
-			'uid_1' => 'First description',
-		];
-
-		$sut = $this->make_instance( 'event-uid' );
-
-		$post_id = $sut->import_next_row();
-
-		$this->assertEquals( $post_id, wp_update_post( [ 'ID' => $post_id, 'post_content' => '' ] ) );
-
-		$this->data = [
-			'uid_1' => 'New description',
-		];
-
-		$sut = $this->make_instance( 'event-uid' );
-
-		$reimport_post_id = $sut->import_next_row();
-
-		$this->assertEquals( $post_id, $reimport_post_id );
-		$this->assertEquals( 'New description', get_post( $post_id )->post_content );
-	}
-
-	/**
-	 * @test
-	 */
-	public function it_should_not_overwrite_the_description_if_description_does_not_import() {
-		$this->data = [
-			'uid_1' => 'A description',
-		];
-
-		$sut     = $this->make_instance( 'event-uid' );
-		$post_id = $sut->import_next_row();
-
-		$this->assertEquals( 'A description', get_post( $post_id )->post_content );
-
-		$this->data = [
-			'uid_1' => 'B description',
-		];
-
-		// remove event description from field map.
-		if ( ( $key = array_search( 'event_description', $this->field_map ) ) !== false ) {
-			unset( $this->field_map[ $key ] );
-		}
-
-		$sut              = $this->make_instance( 'event-uid' );
-		$reimport_post_id = $sut->import_next_row();
-
-		$this->assertEquals( $post_id, $reimport_post_id );
-		$this->assertEquals( 'A description', get_post( $reimport_post_id )->post_content );
-	}
-
-	/**
-	 * @test
-	 */
-	public function it_should_overwrite_the_description_if_description_import_is_empty() {
-		$this->data = [
-			'uid_1' => 'A Description',
-		];
-
-		$sut     = $this->make_instance( 'event-uid' );
-		$post_id = $sut->import_next_row();
-
-		$this->assertEquals( 'A Description', get_post( $post_id )->post_content );
-
-		$this->data = [
-			'uid_1' => '',
-		];
-
-		$sut              = $this->make_instance( 'event-uid' );
-		$reimport_post_id = $sut->import_next_row();
-
-		$this->assertEquals( $post_id, $reimport_post_id );
-		$this->assertEquals( '', get_post( $reimport_post_id )->post_content );
-	}
 }

@@ -6,6 +6,11 @@ class Tribe__Events__Importer__File_Importer_Venues extends Tribe__Events__Impor
 
 	protected $required_fields = array( 'venue_name' );
 
+	/**
+	 * @var string The meta field name to store and retrieve the manually defined uid.
+	 */
+	protected $uid = '_tribe_venue_uid';
+
 	protected function match_existing_post( array $record ) {
 		$name = $this->get_value_by_key( $record, 'venue_name' );
 		$id   = $this->find_matching_post_id( $name, Tribe__Events__Main::VENUE_POST_TYPE );

@@ -7,6 +7,11 @@ class Tribe__Events__Importer__File_Importer_Organizers extends Tribe__Events__I
 
 	protected $required_fields = array( 'organizer_name' );
 
+	/**
+	 * @var string The meta field name to store and retrieve the manually defined uid.
+	 */
+	protected $uid = '_tribe_organizer_uid';
+
 	protected function match_existing_post( array $record ) {
 		$name = $this->get_value_by_key( $record, 'organizer_name' );
 		$id   = $this->find_matching_post_id( $name, Tribe__Events__Main::ORGANIZER_POST_TYPE );
