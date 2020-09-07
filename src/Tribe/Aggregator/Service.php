@@ -162,7 +162,7 @@ class Tribe__Events__Aggregator__Service {
 		}
 
 		// Build the URL
-		$url = "{$api->domain}{$api->path}{$api->version}/{$endpoint}";
+		$url = apply_filters( 'tribe_events_aggregator_build_url', "{$api->domain}{$api->path}{$api->version}/{$endpoint}/", $endpoint, $api );
 
 		// Enforce Key on the Query Data
 		$data['key'] = $api->key;
@@ -277,6 +277,14 @@ class Tribe__Events__Aggregator__Service {
 		}
 
 		$response = $this->requests->post( esc_url_raw( $url ), $args );
+
+		// we know it is not a 404 or 403 at this point
+		if ( 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+			return new WP_Error(
+				'core:aggregator:bad-response',
+				esc_html__( 'There may be an issue with the Event Aggregator server. Please try your import again later.', 'the-events-calendar' )
+			);
+		}
 
 		if ( is_wp_error( $response ) ) {
 			return $response;
@@ -527,6 +535,50 @@ class Tribe__Events__Aggregator__Service {
 	}
 
 	/**
+	 * Update the details of an existing import into EA server.
+	 *
+	 * @since 5.1.5
+	 *
+	 * @param $import_id string The ID of the import to be updated.
+	 * @param $args      array An key, value array representing the values to update on the EA server.
+	 *
+	 * @return object|stdClass|string|WP_Error Response from EA server.
+	 */
+	public function update_import( $import_id, $args ) {
+		$api = $this->api();
+
+		// if the user doesn't have a license key, don't bother hitting the service.
+		if ( is_wp_error( $api ) ) {
+			return $api;
+		}
+
+		/**
+		 * Allow any external sources (plugins) to add licenses attached to the call to the EA server as part
+		 * of an array on licenses, useful when you have different products accessing EA server.
+		 *
+		 * @since 5.1.5
+		 *
+		 * @param  bool|string $pue_key PUE key
+		 * @param  array       $args    Arguments to queue the import
+		 * @param  self        $record  Which record we are dealing with
+		 */
+		$licenses = apply_filters( 'tribe_aggregator_service_put_pue_licenses', [], $args, $this );
+
+		// If we have a key we add that to the Arguments.
+		if ( ! empty( $licenses ) ) {
+			$args['licenses'] = $licenses;
+		}
+
+		return $this->post(
+			"import/{$import_id}",
+			[
+				'body'   => $args,
+				'method' => 'PUT',
+			]
+		);
+	}
+
+	/**
 	 * Fetches an image from the Event Aggregator service
 	 *
 	 * @param string $image_id Image ID to fetch
@@ -541,7 +593,8 @@ class Tribe__Events__Aggregator__Service {
 		 * @since 4.6.18
 		 *
 		 * @param  array  $data      Which Arguments
-		 * @param  string  $image_id  Image ID
+		 * @param string	      $image_id  The image post ID.
+		 * @param array<string,mixed> $data      The image data.
 		 */
 		$data = apply_filters( 'tribe_aggregator_get_image_data_args', [], $record, $image_id );
 
