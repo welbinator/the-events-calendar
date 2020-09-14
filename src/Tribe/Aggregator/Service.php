@@ -22,7 +22,7 @@ class Tribe__Events__Aggregator__Service {
 	 * Codes and strings from the EA Service. These only exist here so that they can be translated
 	 * @var array
 	 */
-	private $service_messages = array();
+	private $service_messages = [];
 
 	/**
 	 * @var string
@@ -54,7 +54,7 @@ class Tribe__Events__Aggregator__Service {
 		'version'  => 'v1',
 		'domain'   => 'https://ea.theeventscalendar.com/',
 		'path'     => 'api/aggregator/',
-		'licenses' => array(),
+		'licenses' => [],
 	];
 
 	/**
@@ -153,7 +153,7 @@ class Tribe__Events__Aggregator__Service {
 	 *
 	 * @return string|WP_Error
 	 */
-	public function build_url( $endpoint, $data = array() ) {
+	public function build_url( $endpoint, $data = [] ) {
 		$api = $this->api();
 
 		// If we have an WP_Error we return it here
@@ -162,7 +162,7 @@ class Tribe__Events__Aggregator__Service {
 		}
 
 		// Build the URL
-		$url = "{$api->domain}{$api->path}{$api->version}/{$endpoint}";
+		$url = apply_filters( 'tribe_events_aggregator_build_url', "{$api->domain}{$api->path}{$api->version}/{$endpoint}/", $endpoint, $api );
 
 		// Enforce Key on the Query Data
 		$data['key'] = $api->key;
@@ -181,7 +181,7 @@ class Tribe__Events__Aggregator__Service {
 	 *
 	 * @return stdClass|WP_Error
 	 */
-	public function get( $endpoint, $data = array() ) {
+	public function get( $endpoint, $data = [] ) {
 		$url = $this->build_url( $endpoint, $data );
 
 		// If we have an WP_Error we return it here
@@ -199,7 +199,7 @@ class Tribe__Events__Aggregator__Service {
 
 		$response = $http_response = $this->requests->get(
 			esc_url_raw( $url ),
-			array( 'timeout' => $timeout_in_seconds )
+			[ 'timeout' => $timeout_in_seconds ]
 		);
 
 		if ( is_wp_error( $response ) ) {
@@ -257,7 +257,7 @@ class Tribe__Events__Aggregator__Service {
 	 *
 	 * @return stdClass|WP_Error
 	 */
-	public function post( $endpoint, $data = array() ) {
+	public function post( $endpoint, $data = [] ) {
 		$url = $this->build_url( $endpoint );
 
 		// If we have an WP_Error we return it here
@@ -277,6 +277,14 @@ class Tribe__Events__Aggregator__Service {
 		}
 
 		$response = $this->requests->post( esc_url_raw( $url ), $args );
+
+		// we know it is not a 404 or 403 at this point
+		if ( 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+			return new WP_Error(
+				'core:aggregator:bad-response',
+				esc_html__( 'There may be an issue with the Event Aggregator server. Please try your import again later.', 'the-events-calendar' )
+			);
+		}
 
 		if ( is_wp_error( $response ) ) {
 			return $response;
@@ -365,7 +373,7 @@ class Tribe__Events__Aggregator__Service {
 
 		// If we have an WP_Error we return only CSV
 		if ( $response instanceof WP_Error ) {
-			$response = tribe_error( 'core:aggregator:invalid-eventbrite-token', array(), array( 'response' => $response ) );
+			$response = tribe_error( 'core:aggregator:invalid-eventbrite-token', [], [ 'response' => $response ] );
 		} elseif (
 			false === $cached_response
 			&& isset( $response->status )
@@ -393,10 +401,10 @@ class Tribe__Events__Aggregator__Service {
 
 		// If we have an WP_Error we return only CSV
 		if ( is_wp_error( $response ) ) {
-			return tribe_error( 'core:aggregator:invalid-eventbrite-token', array(), [ 'response' => $response ] );
-		} else {
-			delete_transient( self::$auth_transient );
+			return tribe_error( 'core:aggregator:invalid-eventbrite-token', [], [ 'response' => $response ] );
 		}
+
+		delete_transient( self::$auth_transient );
 
 		return $response;
 	}
@@ -404,14 +412,14 @@ class Tribe__Events__Aggregator__Service {
 	/**
 	 * Fetch import data from service
 	 *
-	 * @param string   $import_id   ID of the Import Record
+	 * @param string $import_id ID of the Import Record
+	 *
+	 * @param array $data
 	 *
 	 * @return stdClass|WP_Error
 	 */
-	public function get_import( $import_id, $data = array() ) {
-		$response = $this->get( 'import/' . $import_id, $data );
-
-		return $response;
+	public function get_import( $import_id, $data = [] ) {
+		return $this->get( 'import/' . $import_id, $data );
 	}
 
 	/**
@@ -447,7 +455,7 @@ class Tribe__Events__Aggregator__Service {
 		 * @param  array       $args    Arguments to queue the import
 		 * @param  self        $record  Which record we are dealing with
 		 */
-		$licenses = apply_filters( 'tribe_aggregator_service_post_pue_licenses', array(), $args, $this );
+		$licenses = apply_filters( 'tribe_aggregator_service_post_pue_licenses', [], $args, $this );
 
 		// If we have a key we add that to the Arguments
 		if ( ! empty( $licenses ) ) {
@@ -474,7 +482,7 @@ class Tribe__Events__Aggregator__Service {
 				'content-type' => 'multipart/form-data; boundary=' . $boundary,
 			];
 
-			$payload = array();
+			$payload = [];
 			foreach ( $args as $name => $value ) {
 				if ( 'file' === $name ) {
 					continue;
@@ -515,17 +523,59 @@ class Tribe__Events__Aggregator__Service {
 				$payload[] = '--' . $boundary . '--';
 			}
 
-			$args = array(
+			$args = [
 				'headers' => $headers,
-				'body' => implode( "\r\n", $payload ),
-			);
+				'body'    => implode( "\r\n", $payload ),
+			];
 		} else {
 			$args = $request_args;
 		}
 
-		$response = $this->post( 'import', $args );
+		return $this->post( 'import', $args );
+	}
 
-		return $response;
+	/**
+	 * Update the details of an existing import into EA server.
+	 *
+	 * @since 5.1.5
+	 *
+	 * @param $import_id string The ID of the import to be updated.
+	 * @param $args      array An key, value array representing the values to update on the EA server.
+	 *
+	 * @return object|stdClass|string|WP_Error Response from EA server.
+	 */
+	public function update_import( $import_id, $args ) {
+		$api = $this->api();
+
+		// if the user doesn't have a license key, don't bother hitting the service.
+		if ( is_wp_error( $api ) ) {
+			return $api;
+		}
+
+		/**
+		 * Allow any external sources (plugins) to add licenses attached to the call to the EA server as part
+		 * of an array on licenses, useful when you have different products accessing EA server.
+		 *
+		 * @since 5.1.5
+		 *
+		 * @param  bool|string $pue_key PUE key
+		 * @param  array       $args    Arguments to queue the import
+		 * @param  self        $record  Which record we are dealing with
+		 */
+		$licenses = apply_filters( 'tribe_aggregator_service_put_pue_licenses', [], $args, $this );
+
+		// If we have a key we add that to the Arguments.
+		if ( ! empty( $licenses ) ) {
+			$args['licenses'] = $licenses;
+		}
+
+		return $this->post(
+			"import/{$import_id}",
+			[
+				'body'   => $args,
+				'method' => 'PUT',
+			]
+		);
 	}
 
 	/**
@@ -543,13 +593,12 @@ class Tribe__Events__Aggregator__Service {
 		 * @since 4.6.18
 		 *
 		 * @param  array  $data      Which Arguments
-		 * @param  strng  $image_id  Image ID
+		 * @param string	      $image_id  The image post ID.
+		 * @param array<string,mixed> $data      The image data.
 		 */
-		$data = apply_filters( 'tribe_aggregator_get_image_data_args', array(), $record, $image_id );
+		$data = apply_filters( 'tribe_aggregator_get_image_data_args', [], $record, $image_id );
 
-		$response = $this->get( 'image/' . $image_id, $data );
-
-		return $response;
+		return $this->get( 'image/' . $image_id, $data );
 	}
 
 	/**
@@ -563,7 +612,7 @@ class Tribe__Events__Aggregator__Service {
 	 *
 	 * @return string
 	 */
-	public function get_service_message( $key, $args = array(), $default = null ) {
+	public function get_service_message( $key, $args = [], $default = null ) {
 		if ( empty( $this->service_messages[ $key ] ) ) {
 			// Get error message if this is a registered Tribe_Error key.
 			$error = tribe_error( $key );
@@ -620,10 +669,10 @@ class Tribe__Events__Aggregator__Service {
 		}
 
 		if ( ! isset( $origins->usage->$type ) ) {
-			return array(
-				'used' => 0,
+			return [
+				'used'      => 0,
 				'remaining' => 0,
-			);
+			];
 		}
 
 		return $origins->usage->$type;
@@ -688,36 +737,46 @@ class Tribe__Events__Aggregator__Service {
 			esc_html__( 'the UID part of the iCalendar Specification', 'the-events-calendar' )
 		);
 
+		$facebook_restriction_link = sprintf(
+			'<a href="https://theeventscalendar.com/knowledgebase/import-errors/" target="_blank">%s</a>',
+			esc_html__( 'read more about Facebook restrictions in our knowledgebase', 'the-events-calendar')
+		);
+
+		$meetup_api_changes_link = sprintf(
+			'<a href="https://m.tri.be/1afb">%s</a>',
+			esc_html__( 'https://m.tri.be/1afb', 'the-events-calendar' )
+		);
+
 		$this->service_messages = [
 			/* Error */
-			'error:create-import-failed'         => __( 'Sorry, but something went wrong. Please try again.', 'the-events-calendar' ),
-			'error:create-import-invalid-params' => __( 'Events could not be imported. The import parameters were invalid.', 'the-events-calendar' ),
-			'error:eb-permissions' => __( 'Events cannot be imported because Eventbrite has returned an error. This could mean that the event ID does not exist, the event or source is marked as Private, or the event or source has been otherwise restricted by Eventbrite. You can <a href="https://theeventscalendar.com/knowledgebase/import-errors/" target="_blank">read more about Eventbrite restrictions in our knowledgebase</a>.', 'the-events-calendar' ),
-			'error:eb-no-results'                => __( 'No upcoming Eventbrite events found.', 'the-events-calendar' ),
-			'error:fetch-404'                    => __( 'The URL provided could not be reached.', 'the-events-calendar' ),
-			'error:fetch-failed'                 => __( 'The URL provided failed to load.', 'the-events-calendar' ),
-			'error:get-image'                    => __( 'The image associated with your event could not be imported.', 'the-events-calendar' ),
-			'error:get-image-bad-association'    => __( 'The image associated with your event is not accessible with your API key.', 'the-events-calendar' ),
-			'error:import-failed'                => __( 'The import failed for an unknown reason. Please try again. If the problem persists, please contact support.', 'the-events-calendar' ),
-			'error:invalid-ical-url'             => __( 'Events could not be imported. The URL provided did not have events in the proper format.', 'the-events-calendar' ),
-			'error:invalid-ics-file'             => __( 'The file provided could not be opened. Please confirm that it is a properly formatted .ics file.', 'the-events-calendar' ),
-			'error:meetup-api-key'               => __( 'Your Meetup API key is invalid.', 'the-events-calendar' ),
-			'error:meetup-api-quota'             => __( 'Event Aggregator cannot reach Meetup.com because you exceeded the request limit for your Meetup API key.', 'the-events-calendar' ),
-			'error:usage-limit-exceeded'         => __( 'The daily limit of %d import requests to the Event Aggregator service has been reached. Please try again later.', 'the-events-calendar' ),
+			'error:create-import-failed'              => __('Sorry, but something went wrong. Please try again.', 'the-events-calendar'),
+			'error:create-import-invalid-params'      => __('Events could not be imported. The import parameters were invalid.', 'the-events-calendar'),
+			'error:eb-permissions'                    => __('Events cannot be imported because Eventbrite has returned an error. This could mean that the event ID does not exist, the event or source is marked as Private, or the event or source has been otherwise restricted by Eventbrite. You can <a href="https://theeventscalendar.com/knowledgebase/import-errors/" target="_blank">read more about Eventbrite restrictions in our knowledgebase</a>.', 'the-events-calendar'),
+			'error:eb-no-results'                     => __('No upcoming Eventbrite events found.', 'the-events-calendar'),
+			'error:fetch-404'                         => __('The URL provided could not be reached.', 'the-events-calendar'),
+			'error:fetch-failed'                      => __('The URL provided failed to load.', 'the-events-calendar'),
+			'error:get-image'                         => __('The image associated with your event could not be imported.', 'the-events-calendar'),
+			'error:get-image-bad-association'         => __('The image associated with your event is not accessible with your API key.', 'the-events-calendar'),
+			'error:import-failed'                     => __('The import failed for an unknown reason. Please try again. If the problem persists, please contact support.', 'the-events-calendar'),
+			'error:invalid-ical-url'                  => __('Events could not be imported. The URL provided did not have events in the proper format.', 'the-events-calendar'),
+			'error:invalid-ics-file'                  => __('The file provided could not be opened. Please confirm that it is a properly formatted .ics file.', 'the-events-calendar'),
+			'error:meetup-api-key'                    => __('Your Meetup API key is invalid.', 'the-events-calendar'),
+			'error:meetup-api-quota'                  => __('Event Aggregator cannot reach Meetup.com because you exceeded the request limit for your Meetup API key.', 'the-events-calendar'),
+			'error:usage-limit-exceeded'              => __('The daily limit of %d import requests to the Event Aggregator service has been reached. Please try again later.', 'the-events-calendar'),
 			/* Fetching */
-			'fetching'                           => __( 'The import is in progress.', 'the-events-calendar' ),
+			'fetching'                                => __('The import is in progress.', 'the-events-calendar'),
 			/* Queued */
-			'queued'                             => __( 'The import will be starting soon.', 'the-events-calendar' ),
+			'queued'                                  => __('The import will be starting soon.', 'the-events-calendar'),
 			/* Success */
-			'success'                            => __( 'Success', 'the-events-calendar' ),
-			'success:create-import'              => __( 'Import created', 'the-events-calendar' ),
-			'success:eventbrite-get-token'       => __( 'Successfully fetched Eventbrite Token', 'the-events-calendar' ),
-			'success:get-origin'                 => __( 'Successfully loaded import origins', 'the-events-calendar' ),
-			'success:import-complete'            => __( 'Import is complete', 'the-events-calendar' ),
-			'success:queued'                     => __( 'Import queued', 'the-events-calendar' ),
-			'error:invalid-other-url'            => __( 'Events could not be imported. The URL provided could not be reached.', 'the-events-calendar' ),
-			'error:no-results'                   => __( 'The requested source does not have any upcoming and published events matching the search criteria.', 'the-events-calendar' ),
-			'error:ical-missing-uids-schedule'   => sprintf(
+			'success'                                 => __('Success', 'the-events-calendar'),
+			'success:create-import'                   => __('Import created', 'the-events-calendar'),
+			'success:eventbrite-get-token'            => __('Successfully fetched Eventbrite Token', 'the-events-calendar'),
+			'success:get-origin'                      => __('Successfully loaded import origins', 'the-events-calendar'),
+			'success:import-complete'                 => __('Import is complete', 'the-events-calendar'),
+			'success:queued'                          => __('Import queued', 'the-events-calendar'),
+			'error:invalid-other-url'                 => __('Events could not be imported. The URL provided could not be reached.', 'the-events-calendar'),
+			'error:no-results'                        => __('The requested source does not have any upcoming and published events matching the search criteria.', 'the-events-calendar'),
+			'error:ical-missing-uids-schedule'        => sprintf(
 				_x(
 					'Some events at the requested source are missing the UID attribute required by the iCalendar Specification. Creating a scheduled import would generate duplicate events on each import. Instead, please use a One-Time import or contact the source provider to fix the UID issue; linking them to %s may help them more quickly resolve their feed\'s UID issue.',
 					'The placeholder is for the localized version of the iCal UID specification link',
@@ -726,13 +785,61 @@ class Tribe__Events__Aggregator__Service {
 				$ical_uid_specification_link
 			),
 			/* Warning */
-			'warning:ical-missing-uids-manual'   => sprintf(
+			'warning:ical-missing-uids-manual'        => sprintf(
 				_x(
 					'Some events at the requested source are missing the UID attribute required by the iCalendar Specification. One-Time and ICS File imports are allowed but successive imports will create duplicated events on your site. Please contact the source provider to fix the UID issue; linking them to %s may help them more quickly resolve their feed\'s UID issue.',
 					'The placeholder is for the localized version of the iCal UID specification link',
-					'the-events-calendar' ),
+					'the-events-calendar'),
 				$ical_uid_specification_link
 			),
+			'success:facebook-get-token'              => __('Successfully fetched Facebook Token', 'the-events-calendar'),
+			'success:eb-token-valid'                  => __('Successfully connected to Eventbrite', 'the-events-calendar'),
+			'success:eb-token-disconnected'           => __('Successfully disconnected Eventbrite', 'the-events-calendar'),
+			'success:eb-webhook-success'              => __('Successfully marked event for import from Eventbrite', 'the-events-calendar'),
+			'success:eb-event-synced'                 => __('Successfully synced event to Eventbrite', 'the-events-calendar'),
+			'error:import-id-not-queued'              => __('The import being fetched is not queued up for importing. Please try the import again.', 'the-events-calendar'),
+			'error:fb-permissions'                    => sprintf(
+				_x(
+					'Events cannot be imported because Facebook has returned an error. This could mean that the event ID does not exist, the event or source is marked as Private, or the event or source has been otherwise restricted by Facebook. You can %1$s.',
+					'Placeholder used for the facebook restriction link',
+					'the-events-calendar'
+				),
+				$facebook_restriction_link
+			),
+			'error:fb-error'                          => __('Events cannot be imported because we received an error from Facebook: ', 'the-events-calendar'),
+			'error:eb-error'                          => __('Events cannot be imported because we received an error from Eventbrite: ', 'the-events-calendar'),
+			'error:eb-sync-error'                     => __('Event cannot be synced to Eventbrite because we received an error from Eventbrite.', 'the-events-calendar'),
+			'error:eb-token-not-valid'                => __('Eventbrite token is not valid.', 'the-events-calendar'),
+			'error:eb-parsed-object-empty'            => __('Eventbrite parsed object is empty.', 'the-events-calendar'),
+			'error:eb-parsed-object-type-empty'       => __('Eventbrite parsed object type is empty.', 'the-events-calendar'),
+			'error:eb-parsed-object-id-empty'         => __('Eventbrite parsed object ID is empty.', 'the-events-calendar'),
+			'error:eb-object-empty'                   => __('Eventbrite parsed object is empty.', 'the-events-calendar'),
+			'error:eb-event-not-found'                => __('Eventbrite event not found.', 'the-events-calendar'),
+			'error:eb-organizer-not-found'            => __('Eventbrite organizer not found.', 'the-events-calendar'),
+			'error:eb-venue-not-found'                => __('Eventbrite venue not found.', 'the-events-calendar'),
+			'error:eb-user-not-found'                 => __('Eventbrite user not found.', 'the-events-calendar'),
+			'error:eb-sync-data-invalid'              => __('Eventbrite sync data invalid.', 'the-events-calendar'),
+			'error:eb-token-not-found'                => __('You do not have an active connection to Eventbrite through your account and Event Aggregator.', 'the-events-calendar'),
+			'error:eb-webhook-not-registered'         => __('Webhook not registered properly.', 'the-events-calendar'),
+			'error:eb-action-not-supported'           => __('This webhook action is not currently supported.', 'the-events-calendar'),
+			'error:eb-event-not-owned'                => __('Event not owned, you cannot edit it.', 'the-events-calendar'),
+			'warning:meetup-api-key-deprecated-plain' => sprintf(
+				_x(
+					'Meetup is no longer supporting API keys, and will restrict access using your existing key starting from August 2019. As an alternative, you should use OAuth2 and update The Events Calendar to the latest version. Learn more at %1$s',
+					'Placeholder used for the meetup API changes',
+					'the-events-calendar'
+				),
+				$meetup_api_changes_link
+			),
+			'error:meetup-api-key-deprecated-plain'   => sprintf(
+				_x(
+					'Meetup is no longer supporting API keys, and has restricted access using your existing key starting from August 2019. As an alternative, you must use OAuth2 and update The Events Calendar to the latest version. Learn more at %1$s.',
+					'Placeholder used for the meetup API changes link when the KEY is plain',
+					'the-events-calendar'
+				),
+				$meetup_api_changes_link
+			),
+			'error:meetup-token-not-found'            => __('You do not have an active connection to Meetup through your account and Event Aggregator.', 'the-events-calendar'),
 		];
 
 		/**
@@ -764,9 +871,9 @@ class Tribe__Events__Aggregator__Service {
 		$keys = array_combine( $keys, $keys );
 		$confirmation_args = array_intersect_key( $args, $keys );
 		$confirmation_args = array_merge( $confirmation_args, [
-			'eventbrite_token' => '1',
-			'meetup_api_key'   => '1',
-		]
+				'eventbrite_token' => '1',
+				'meetup_api_key'   => '1',
+			]
 		);
 
 		// Set site for origin(s) that need it for new token handling.
@@ -776,9 +883,7 @@ class Tribe__Events__Aggregator__Service {
 
 		$response = $this->post_import( $confirmation_args );
 
-		$confirmed = ! empty( $response->status ) && 0 !== strpos( $response->status, 'error' );
-
-		return $confirmed;
+		return ! empty( $response->status ) && 0 !== strpos( $response->status, 'error' );
 	}
 
 	/**
@@ -789,16 +894,14 @@ class Tribe__Events__Aggregator__Service {
 	 * @return array
 	 */
 	protected function get_default_origins() {
-		$origins = array(
-			'origin' => array(
-				(object) array(
+		return [
+			'origin' => [
+				(object) [
 					'id'   => 'csv',
 					'name' => __( 'CSV File', 'the-events-calendar' ),
-				),
-			),
-		);
-
-		return $origins;
+				],
+			],
+		];
 	}
 
 	/**
@@ -825,7 +928,7 @@ class Tribe__Events__Aggregator__Service {
 		/** @var \Tribe__Events__Aggregator__Settings $settings */
 		$settings = tribe( 'events-aggregator.settings' );
 
-		$limit_args = array();
+		$limit_args = [];
 		switch ( $limit_type ) {
 			case 'no_limit':
 				break;
@@ -913,7 +1016,7 @@ class Tribe__Events__Aggregator__Service {
 
 		// If we have an WP_Error we return only CSV.
 		if ( $response instanceof WP_Error ) {
-			$response = tribe_error( 'core:aggregator:invalid-meetup-token', array(), [ 'response' => $response ] );
+			$response = tribe_error( 'core:aggregator:invalid-meetup-token', [], [ 'response' => $response ] );
 		} elseif (
 			false === $cached_response
 			&& isset( $response->status )
@@ -941,10 +1044,10 @@ class Tribe__Events__Aggregator__Service {
 
 		// If we have an WP_Error we return only CSV
 		if ( is_wp_error( $response ) ) {
-			return tribe_error( 'core:aggregator:invalid-meetup-token', array(), [ 'response' => $response ] );
-		} else {
-			delete_transient( self::$auth_transient_meetup );
+			return tribe_error( 'core:aggregator:invalid-meetup-token', [], [ 'response' => $response ] );
 		}
+
+		delete_transient( self::$auth_transient_meetup );
 
 		return $response;
 	}
@@ -952,21 +1055,22 @@ class Tribe__Events__Aggregator__Service {
 	/**
 	 * Fetch Facebook Extended Token from the Service
 	 *
+	 * @return stdClass|WP_Error
+	 *
 	 * @deprecated 4.6.23
 	 *
-	 * @return array
 	 */
 	public function get_facebook_token() {
 		_deprecated_function( __FUNCTION__, '4.6.23', 'Importing from Facebook is no longer supported in Event Aggregator.' );
 
-		$args = array(
+		$args     = [
 			'referral' => urlencode( home_url() ),
-		);
+		];
 		$response = $this->get( 'facebook/token', $args );
 
 		// If we have an WP_Error we return only CSV
 		if ( is_wp_error( $response ) ) {
-			return tribe_error( 'core:aggregator:invalid-facebook-token', array(), array( 'response' => $response ) );
+			return tribe_error( 'core:aggregator:invalid-facebook-token', [], [ 'response' => $response ] );
 		}
 
 		return $response;
