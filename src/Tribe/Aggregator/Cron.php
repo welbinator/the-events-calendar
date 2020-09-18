@@ -355,7 +355,8 @@ class Tribe__Events__Aggregator__Cron {
 				tribe( 'logger' )->log_debug( sprintf( 'Queueing import on EA Service for %d (child of %d)', $child->id, $record->id ), 'EA Cron' );
 
 				if ( ! empty( $response->status ) ) {
-					tribe( 'logger' )->log_debug( print_r( $response, true ), 'EA Cron' );
+					tribe( 'logger' )->log_debug( sprintf( '%s — %s (%s)', $response->status, $response->message, $response->data->import_id ),
+						'EA Cron' );
 
 					$record->update_meta( 'last_import_status', 'success:queued' );
 
