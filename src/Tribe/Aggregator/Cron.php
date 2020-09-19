@@ -19,7 +19,7 @@ class Tribe__Events__Aggregator__Cron {
 	 * Limit of Requests to our servers
 	 * @var int
 	 */
-	private $limit = 250;
+	private $limit = 5;
 
 	/**
 	 * A Boolean holding if this Cron is Running
@@ -64,7 +64,7 @@ class Tribe__Events__Aggregator__Cron {
 		add_action( self::$single_action, array( $this, 'run' ) );
 
 		// Decreases limit after each Request, runs late for security
-		add_filter( 'pre_http_request', array( $this, 'filter_check_http_limit' ), 25, 3 );
+		// add_filter( 'pre_http_request', array( $this, 'filter_check_http_limit' ), 25, 3 );
 
 		// Add the Actual Process to run on the Action
 		add_action( 'tribe_aggregator_cron_run', [ $this, 'verify_child_record_creation' ], 5 );
