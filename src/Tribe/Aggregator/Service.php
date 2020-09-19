@@ -286,7 +286,6 @@ class Tribe__Events__Aggregator__Service {
 		$code = (int) wp_remote_retrieve_response_code( $response );
 		if ( $code >= 300 || $code < 200 ) {
 			tribe( 'logger' )->log_debug( "Invalid response code: {$code} - during the creation.", 'EA Service' );
-			tribe( 'logger' )->log_debug( print_r($response, true), 'EA Response' );
 
 			return new WP_Error(
 				'core:aggregator:bad-response',
