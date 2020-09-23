@@ -1,5 +1,6 @@
 <?php
 
+
 /**
  * Class Tribe__Events__Importer__File_Importer_Events
  */
@@ -10,7 +11,7 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 	/**
 	 * @var string The meta field name to store and retrieve the manually defined uid.
 	 */
-	protected $uid = '_tribe_event_uid';
+	protected $uid = '_tribe_event_csv_uid';
 
 	/**
 	 * Searches the database for an existing event matching the one described
@@ -48,11 +49,11 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 					'compare' => 'LIKE',
 				),
 				array(
-					'key'     => '_EventAllDay',
-					'value'   => 'yes',
+					'key'   => '_EventAllDay',
+					'value' => 'yes',
 				),
 			);
-		// For regular, non-all day events, use the full date *and* time in the start date comparison
+			// For regular, non-all day events, use the full date *and* time in the start date comparison
 		} else {
 			$meta_query = array(
 				array(
@@ -70,8 +71,8 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 			);
 		}
 
-		$query_args['meta_query'] = $meta_query;
-		$query_args['tribe_remove_date_filters'] = true;
+		$query_args['meta_query']                   = $meta_query;
+		$query_args['tribe_remove_date_filters']    = true;
 		$query_args['tribe_suppress_query_filters'] = true;
 
 		add_filter( 'posts_search', array( $this, 'filter_query_for_title_search' ), 10, 2 );
@@ -81,7 +82,7 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 		 *
 		 * @since 4.6.15
 		 *
-		 * @param array $matches Array with the duplicate matches
+		 * @param array $matches    Array with the duplicate matches
 		 * @param array $query_args Array with the arguments used to get the posts.
 		 */
 		$matches = (array) apply_filters( 'tribe_events_import_event_duplicate_matches', get_posts( $query_args ), $query_args );
@@ -172,9 +173,7 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 			$start_date .= ' ' . $start_time;
 		}
 
-		$start_date = $date_only
-			? date( Tribe__Date_Utils::DBDATEFORMAT, strtotime( $start_date ) )
-			: date( Tribe__Date_Utils::DBDATETIMEFORMAT, strtotime( $start_date ) );
+		$start_date = $date_only ? date( Tribe__Date_Utils::DBDATEFORMAT, strtotime( $start_date ) ) : date( Tribe__Date_Utils::DBDATETIMEFORMAT, strtotime( $start_date ) );
 
 		return $start_date;
 	}
@@ -236,6 +235,7 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 			'EventCurrencyPosition' => $this->get_currency_position( $record ),
 			'EventTimezone'         => $this->get_timezone( $this->get_value_by_key( $record, 'event_timezone' ) ),
 			'feature_event'         => $this->get_boolean_value_by_key( $record, 'feature_event', '1', '' ),
+			'tribe_event_csv_uid'   => $this->has_value_by_key( $record, 'event_uid' ),
 		);
 
 		if ( $organizer_id = $this->find_matching_organizer_id( $record ) ) {
@@ -255,7 +255,7 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 		}
 
 		if ( $cats ) {
-			$events_cat = Tribe__Events__Main::TAXONOMY;
+			$events_cat                        = Tribe__Events__Main::TAXONOMY;
 			$event['tax_input'][ $events_cat ] = Tribe__Terms::translate_terms_to_ids( explode( ',', $cats ), $events_cat );
 		}
 
@@ -277,7 +277,7 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 		if ( ! empty ( $additional_fields ) ) {
 			foreach ( $additional_fields as $key => $csv_column ) {
 				$value = $this->get_value_by_key( $record, $key );
-				if ( strpos( $value, '|' ) > -1 ) {
+				if ( strpos( $value, '|' ) > - 1 ) {
 					$event[ $key ] = explode( '|', $value );
 				} else {
 					$event[ $key ] = $value;
@@ -291,6 +291,7 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 	/**
 	 * Filter allowing user to customize the separator used for organizers
 	 * Defaults to comma ','
+	 *
 	 * @since 4.6.19
 	 *
 	 * @return mixed
@@ -302,7 +303,9 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 	/**
 	 * Find organizer matches from separated string
 	 * Attempts to compensate for names with separators in them - Like "Woodhouse, Chelsea S."
+	 *
 	 * @since 4.6.19
+	 *
 	 * @param $organizers
 	 *
 	 * @return array
@@ -312,7 +315,7 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 		$separator = $this->get_separator(); // We allow this to be filtered
 		$skip      = false; // For concatenation checks
 
-		for ( $i = 0, $len = count( $organizers ); $i < $len; $i++ ) {
+		for ( $i = 0, $len = count( $organizers ); $i < $len; $i ++ ) {
 			if ( $skip ) {
 				$skip = false;
 				continue;
@@ -338,7 +341,7 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 			}
 
 			// we got a match when combined with the next, so we flag to skip the next item
-			$skip       = true;
+			$skip      = true;
 			$matches[] = $potential_match;
 		}
 
@@ -351,7 +354,7 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 
 		$organizer_ids = array( 'OrganizerID' => array() );
 		foreach ( $matches as $id ) {
-			$organizer_ids[ 'OrganizerID' ][] = $id;
+			$organizer_ids['OrganizerID'][] = $id;
 		}
 
 		return $organizer_ids;
@@ -359,16 +362,14 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 
 	/**
 	 * Determine if organizer is a list of space-separated IDs
+	 *
 	 * @param $organizer
 	 *
 	 * @return array[]|bool|false|string[]
 	 */
 	private function organizer_is_space_separated_ids( $organizer ) {
 		$pattern = '/\s+/';
-		if (
-			preg_match( $pattern, $organizer )
-			&& is_numeric( preg_replace( $pattern, '', $organizer ) )
-		) {
+		if ( preg_match( $pattern, $organizer ) && is_numeric( preg_replace( $pattern, '', $organizer ) ) ) {
 			return preg_split( $pattern, $organizer );
 		}
 
@@ -377,6 +378,7 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 
 	/**
 	 * * Determine if organizer is a list of $separator-separated IDs
+	 *
 	 * @param $organizer
 	 *
 	 * @return array[]|bool|false|string[]
@@ -398,7 +400,9 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 
 	/**
 	 * Handle finding the matching organizer(s) for the event
+	 *
 	 * @since 4.6.19
+	 *
 	 * @param $record - the event record from the import
 	 *
 	 * @return array
@@ -512,17 +516,13 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 	 *
 	 * @deprecated5.1.6
 	 *
-	 * @param int    $event_id        The event id being updated by import.
+	 * @param int    $event_id       The event id being updated by import.
 	 * @param string $import_excerpt The imported excerpt text.
 	 *
 	 * @return string
 	 */
 	private function get_post_excerpt( $event_id, $import_excerpt ) {
-		_deprecated_function(
-			__METHOD__,
-			'5.1.6',
-			'$this->get_post_text_field( $event_id, $record, "event_excerpt", "post_excerpt" )'
-		);
+		_deprecated_function( __METHOD__, '5.1.6', '$this->get_post_text_field( $event_id, $record, "event_excerpt", "post_excerpt" )' );
 
 		return '';
 	}
