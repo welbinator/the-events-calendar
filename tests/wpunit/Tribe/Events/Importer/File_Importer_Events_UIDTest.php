@@ -65,10 +65,6 @@ class File_Importer_Events_UIDTest extends File_Importer_EventsTest {
 	 * @test
 	 */
 	public function it_should_import_with_a_uid_and_save_to_meta() {
-		$this->data        = [
-			'uid_1' => 'mt22blue',
-		];
-		$this->field_map[] = 'event_uid';
 
 		$sut = $this->make_instance();
 
@@ -77,7 +73,7 @@ class File_Importer_Events_UIDTest extends File_Importer_EventsTest {
 		var_dump( $post_id );
 
 		$this->assertNotFalse( $post_id );
-		$this->assertEquals( 'mt22blue', get_post_meta( $post_id, '_tribe_event_uid', true ) );
+		$this->assertEquals( 'mt22blue', get_post_meta( $post_id, '_tribe_event_csv_uid', true ) );
 	}
 
 	/**
@@ -119,7 +115,7 @@ class File_Importer_Events_UIDTest extends File_Importer_EventsTest {
 		var_dump( $second_post_id );
 
 		$this->assertEquals( $first_post_id, $second_post_id );
-		$this->assertEquals( 'mt22blue', get_post_meta( $second_post_id, '_tribe_event_uid', true ) );
+		$this->assertEquals( 'mt22blue', get_post_meta( $second_post_id, '_tribe_event_csv_uid', true ) );
 	}
 
 	/**

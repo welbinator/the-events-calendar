@@ -23,10 +23,21 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 	 *            events are found.
 	 */
 	protected function match_existing_post( array $record ) {
+
 		$start_date = $this->get_event_start_date( $record );
 		$end_date   = $this->get_event_end_date( $record );
 		$all_day    = $this->get_boolean_value_by_key( $record, 'event_all_day' );
-		$uid        = $this->has_value_by_key( $record, 'event_uid' );
+		$uid        = $this->get_value_by_key( $record, 'event_uid' );
+
+		//todo match by uid and if found return
+		// method to get by uid
+		// return in this method
+		if ( $uid ) {
+			$uid_match = $this->match_uid( $uid );
+			if ( $uid_match ) {
+				return $uid_match;
+			}
+		}
 
 		// Base query - only the meta query will be different
 		$query_args = array(
@@ -95,7 +106,51 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 		return reset( $matches );
 	}
 
+	protected function match_uid( $uid ) {
+
+		//todo match by uid and if found return
+		// method to get by uid
+		// return in this method
+		// Base query - only the meta query will be different
+		$query_args = array(
+			'post_type'        => Tribe__Events__Main::POSTTYPE,
+			'fields'           => 'ids',
+			'posts_per_page'   => 1,
+			'suppress_filters' => false,
+			'post_status'      => 'any',
+		);
+
+		$meta_query = array(
+			array(
+				'key'     => $this->uid,
+				'value'   => $uid,
+				'compare' => '=',
+			),
+		);
+
+		$query_args['meta_query']                   = $meta_query;
+		$query_args['tribe_remove_date_filters']    = true;
+		$query_args['tribe_suppress_query_filters'] = true;
+
+		/**
+		 * Add an option to change the $matches that are duplicates.
+		 *
+		 * @since 4.6.15
+		 *
+		 * @param array $matches    Array with the duplicate matches
+		 * @param array $query_args Array with the arguments used to get the posts.
+		 */
+		$matches = (array) apply_filters( 'tribe_events_import_event_duplicate_matches', get_posts( $query_args ), $query_args );
+
+		if ( empty( $matches ) ) {
+			return 0;
+		}
+
+		return reset( $matches );
+	}
+
 	protected function update_post( $post_id, array $record ) {
+
 		$update_authority_setting = tribe( 'events-aggregator.settings' )->default_update_authority( 'csv' );
 
 		$this->watch_term_creation();
@@ -123,6 +178,13 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 
 		Tribe__Events__API::updateEvent( $post_id, $event );
 
+		var_dump('updating');
+		//todo save the uid meta
+		if ( isset( $event[ 'tribe_event_csv_uid' ] ) ) {
+			var_dump( $event['tribe_event_csv_uid']);
+			update_metadata( 'post', $post_id, $this->uid, $event['tribe_event_csv_uid'] );
+		}
+
 		$this->stop_watching_term_creation();
 
 		if ( $this->is_aggregator && ! empty( $this->aggregator_record ) ) {
@@ -146,6 +208,13 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 		$event = $this->build_event_array( false, $record );
 
 		$id = Tribe__Events__API::createEvent( $event );
+
+		//todo save the uid meta
+		var_dump('creating');
+		if ( isset( $event[ 'tribe_event_csv_uid' ] ) ) {
+			var_dump( $event);
+			update_metadata( 'post', $id, $this->uid, $event['tribe_event_csv_uid'] );
+		}
 
 		$this->stop_watching_term_creation();
 
@@ -235,7 +304,7 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 			'EventCurrencyPosition' => $this->get_currency_position( $record ),
 			'EventTimezone'         => $this->get_timezone( $this->get_value_by_key( $record, 'event_timezone' ) ),
 			'feature_event'         => $this->get_boolean_value_by_key( $record, 'feature_event', '1', '' ),
-			'tribe_event_csv_uid'   => $this->has_value_by_key( $record, 'event_uid' ),
+			'tribe_event_csv_uid'   => $this->get_value_by_key( $record, 'event_uid' ),
 		);
 
 		if ( $organizer_id = $this->find_matching_organizer_id( $record ) ) {
@@ -284,7 +353,8 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 				}
 			}
 		}
-
+		var_dump('getevents');
+		var_dump($event);
 		return $event;
 	}
 
@@ -455,7 +525,7 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 	/**
 	 * Get Post Text from Import or Existing Value using the provided field name and post field.
 	 *
-	 * @since5.1.6
+	 * @since 5.1.6
 	 *
 	 * @param int    $event_id   The event id being updated by import.
 	 * @param array  $record     An event record from the import.
@@ -490,6 +560,12 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 		return $import_description;
 	}
 
+
+	protected function update_uid( $event_id, $record, $field, $post_field ) {
+
+		do_action( 'tribe_events_update_meta', $event_id, $data, $event );
+
+	}
 	/**
 	 * Allows the user to specify the currency position using alias terms.
 	 *
