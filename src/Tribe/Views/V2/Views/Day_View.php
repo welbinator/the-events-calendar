@@ -106,10 +106,7 @@ class Day_View extends View {
 
 		$args = parent::setup_repository_args( $context );
 
-		$context_arr = $context->to_array();
-
-		$date = Arr::get( $context_arr, 'event_date', 'now' );
-		$event_display = Arr::get( $context_arr, 'event_display_mode', Arr::get( $context_arr, 'event_display' ), 'current' );
+		$date = $context->get( 'event_date', 'now' );
 
 		$args['date_overlaps'] = [ tribe_beginning_of_day( $date ), tribe_end_of_day( $date ) ];
 

@@ -1138,7 +1138,10 @@ class View implements View_Interface {
 	protected function setup_repository_args( Context $context = null ) {
 		$context = null !== $context ? $context : $this->context;
 
-		$context_arr = $context->to_array();
+		$pagination_vars = [
+			'paged' => $context->get( 'paged' ),
+			'page' => $context->get( 'page' ),
+		];
 
 		/*
 		 * Note: we are setting events_per_page to +1 so we don't need to query twice to
@@ -1148,8 +1151,8 @@ class View implements View_Interface {
 		 * @since 5.0.0
 		*/
 		$args = [
-			'posts_per_page'       => $context_arr['events_per_page'] + 1,
-			'paged'                => max( Arr::get_first_set( array_filter( $context_arr ), [
+			'posts_per_page'       => $context->get( 'events_per_page' ) + 1,
+			'paged'                => max( Arr::get_first_set( array_filter( $pagination_vars ), [
 				'paged',
 				'page',
 			], 1 ), 1 ),
@@ -1165,12 +1168,12 @@ class View implements View_Interface {
 		add_filter( 'tribe_repository_query_arg_offset_override', [ $this, 'filter_repository_query_arg_offset_override' ], 10, 2 );
 
 		// Set's up category URL for all views.
-		if ( ! empty( $context_arr[ TEC::TAXONOMY ] ) ) {
-			$args[ TEC::TAXONOMY ] = $context_arr[ TEC::TAXONOMY ];
+		if ( ! empty( $context->get( TEC::TAXONOMY ) ) ) {
+			$args[ TEC::TAXONOMY ] = $context->get( TEC::TAXONOMY );
 		}
 
-		if ( ! empty( $context_arr['event_category'] ) ) {
-			$args['event_category'] = $context_arr['event_category'];
+		if ( ! empty( $context->get( 'event_category' ) ) ) {
+			$args['event_category'] = $context->get( 'event_category' );
 		}
 
 		// Setup featured only when set to true.

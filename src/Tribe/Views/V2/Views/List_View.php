@@ -234,10 +234,9 @@ class List_View extends View {
 
 		$args = parent::setup_repository_args( $context );
 
-		$context_arr = $context->to_array();
-
-		$date = Arr::get( $context_arr, 'event_date', 'now' );
-		$event_display = Arr::get( $context_arr, 'event_display_mode', Arr::get( $context_arr, 'event_display' ), 'current' );
+		$date          = $context->get( 'event_date', 'now' );
+		$event_display = $context->get( 'event_display' );
+		$event_display = $context->get( 'event_display_mode', $event_display ?: 'current' );
 
 		if ( 'past' !== $event_display ) {
 			$args['ends_after'] = $date;
