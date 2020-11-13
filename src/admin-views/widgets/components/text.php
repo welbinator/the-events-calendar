@@ -18,20 +18,21 @@
  */
 
 ?>
-<p
-		class="tribe-widget-text tribe-common-form-control-text"
+<div
+		class="tribe-widget-form-control tribe-widget-form-control-text"
+		<?php echo esc_html( $dependency ); ?>
 >
 	<label
-			class="tribe-common-form-control-text__label"
+			class="tribe-widget-form-control__label"
 			for="<?php echo esc_attr( $id ); ?>"
 	>
 		<?php echo esc_html( $label ); ?>
 	</label>
 	<input
-			class="tribe-common-form-control-text__input widefat"
+			class="tribe-widget-form-control__input widefat"
 			id="<?php echo esc_attr( $id ); ?>"
 			name="<?php echo esc_attr( $name ); ?>"
 			type="text"
 			value="<?php echo esc_attr( $value ); ?>"
 	/>
-</p>
+</div>

@@ -123,6 +123,7 @@ class Widget_List extends Widget_Abstract {
 		$updated_instance['featured_events_only'] = ! empty( $new_instance['featured_events_only'] );
 		$updated_instance['jsonld_enable']        = (int) ( ! empty( $new_instance['jsonld_enable'] ) );
 		$updated_instance['tribe_is_list_widget'] = ! empty( $new_instance['tribe_is_list_widget'] );
+		$updated_instance['taxonomy']             = ! empty( $new_instance['taxonomy'] ) ? $new_instance['taxonomy'] : [];
 
 		return $this->filter_updated_instance( $updated_instance, $new_instance );
 	}
@@ -131,7 +132,6 @@ class Widget_List extends Widget_Abstract {
 	 * {@inheritDoc}
 	 */
 	public function setup_admin_fields() {
-
 		return [
 			'title'                => [
 				'label' => _x( 'Title:', 'The label for the field of the title of the List Widget.', 'the-events-calendar' ),
