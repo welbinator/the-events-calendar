@@ -16,6 +16,8 @@
 
 namespace Tribe\Events\Views\V2\Widgets;
 
+use Tribe__Dependency as Dependency;
+
 /**
  * Class Compatibility
  *
@@ -47,6 +49,21 @@ class Compatibility {
 	public function hooks() {
 		add_action( 'tribe_plugins_loaded', [ $this, 'switch_compatibility' ] );
 		add_filter( 'option_sidebars_widgets', [ $this, 'remap_list_widget_id_bases' ] );
+		add_action( 'widgets_init', array( $this, 'handle_widgets_init' ), 100 ); // this is insanely high to override the 100 in ECP.
+		add_filter( 'option_widget_tribe-events-adv-list-widget', [ $this, 'alert_adv' ] );
+		add_filter( 'option_widget_tribe-events-list-widget', [ $this, 'alert_base' ] );
+	}
+
+	public function tribe_events_pro_widgets_v2_is_enabled() {
+		return tribe_events_widgets_v2_is_enabled()
+			&& class_exists( 'Tribe__Events__Pro__Main' )
+			&& -1 === version_compare( '5.1.6', tribe( Dependency::class )->get_plugin_version( 'Tribe__Events__Pro__Main' ) );
+	}
+
+	public function handle_widgets_init() {
+		if ( $this->tribe_events_pro_widgets_v2_is_enabled() ) {
+			register_widget( 'Tribe__Events__List_Widget' );
+		}
 	}
 
 	/**
@@ -59,6 +76,15 @@ class Compatibility {
 	 * @since TBD
 	 */
 	public function switch_compatibility() {
+
+		// v1 & v1 list -> adv_list
+		// v2 & v1 adv_list !== list (both)
+		// v2 & v2 adv_list -> list
+
+		if ( tribe_events_widgets_v2_is_enabled() && ! $this->tribe_events_pro_widgets_v2_is_enabled() ) {
+			//return;
+		}
+
 		/**
 		 * Allow filtering of whether the event list or the advanced event list widget should be primary.
 		 *
@@ -66,13 +92,9 @@ class Compatibility {
 		 *
 		 * @param bool $adv_primary Whether the advanced list widget is primary.
 		 */
-		$advanced_primary = apply_filters( 'tribe_events_views_v2_advanced_list_widget_primary', false );
-		if (
-			$advanced_primary &&
-			(
-				! tribe_events_views_v2_is_enabled()
-			)
-		) {
+		$advanced_primary = apply_filters( 'tribe_events_views_v2_advanced_list_widget_primary', $this->tribe_events_pro_widgets_v2_is_enabled() );
+
+		if ( $advanced_primary ) {
 			$this->primary_id_base     = 'tribe-events-adv-list-widget';
 			$this->alternative_id_base = 'tribe-events-list-widget';
 		}
@@ -94,12 +116,20 @@ class Compatibility {
 			return $widget_areas;
 		}
 
+		// If TEC is updated, let ECP do its own thing.
+		if ( $this->tribe_events_pro_widgets_v2_is_enabled() ) {
+			return $widget_areas;
+		}
+
+
+
 		foreach ( $widget_areas as $key => $widget_location ) {
 			if ( ! is_array( $widget_location ) ) {
 				continue;
 			}
 
 			foreach ( $widget_location as $widget_key => $widget ) {
+				// default replace tribe-events-list-widget with tribe-events-adv-list-widget
 				$widget_areas[ $key ][ $widget_key ] = str_replace( $this->alternative_id_base, $this->primary_id_base, $widget );
 			}
 		}
@@ -129,5 +159,13 @@ class Compatibility {
 
 		// Combine arrays and keep the array keys.
 		return $widgets + $alternative_options;
+	}
+
+	public function alert_adv( $widgets ) {
+		return $widgets;
+	}
+
+	public function alert_base( $widgets ) {
+		return $widgets;
 	}
 }
