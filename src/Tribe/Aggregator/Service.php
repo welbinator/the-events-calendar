@@ -161,16 +161,25 @@ class Tribe__Events__Aggregator__Service {
 			return $api;
 		}
 
-		// Build the URL
-		$url = apply_filters( 'tribe_events_aggregator_build_url', "{$api->domain}{$api->path}{$api->version}/{$endpoint}/", $endpoint, $api );
-
 		// Enforce Key on the Query Data
 		$data['key'] = $api->key;
 
 		// If we have data we add it
-		$url = add_query_arg( $data, $url );
+		return add_query_arg( $data, $this->base_url( $endpoint, $api ) );
+	}
 
-		return $url;
+	/**
+	 * Allow to change the constructed URL used for EA.
+	 *
+	 * @since TBD
+	 *
+	 * @param string   $endpoint The path of the endpoint inside of the base url.
+	 * @param stdClass $api      An object representing the properties of the API.
+	 *
+	 * @return string The generated URL.
+	 */
+	private function base_url( $endpoint, stdClass $api ) {
+		return (string) apply_filters( 'tribe_events_aggregator_build_url', "{$api->domain}{$api->path}{$api->version}/{$endpoint}/", $endpoint, $api );
 	}
 
 	/**
@@ -277,16 +286,15 @@ class Tribe__Events__Aggregator__Service {
 
 		// if not timeout was set we pass it as 15 seconds
 		if ( ! isset( $args['timeout'] ) ) {
-			$args['timeout'] = 30;
+			$args['timeout'] = 15;
 		}
 
 		$response = $this->requests->post( esc_url_raw( $url ), $args );
 
-		// we know it is not a 404 or 403 at this point
+		// we know it is not a 404 or 403 at this point.
 		$code = (int) wp_remote_retrieve_response_code( $response );
 		if ( $code >= 300 || $code < 200 ) {
 			tribe( 'logger' )->log_debug( "Invalid response code: {$code} - during the creation.", 'EA Service' );
-
 			return new WP_Error(
 				'core:aggregator:bad-response',
 				esc_html__( 'There may be an issue with the Event Aggregator server. Please try your import again later.', 'the-events-calendar' )

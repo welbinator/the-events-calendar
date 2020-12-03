@@ -1,16 +1,51 @@
 <?php
-// Don't load directly
-defined( 'WPINC' ) or die;
+/**
+ * Create a new Queue to process Batch imports.
+ *
+ * @since TBD
+ */
 
-class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__Aggregator__Record__Queue_Interface {
+namespace Tribe\Events\Aggregator\Record;
+
+use DateTime;
+use DateTimeZone;
+use Exception;
+use Tribe__Date_Utils as Dates;
+use Tribe__Events__Aggregator__Record__Abstract;
+use Tribe__Events__Aggregator__Record__Activity;
+use Tribe__Events__Aggregator__Record__Queue;
+use Tribe__Events__Aggregator__Record__Queue_Cleaner;
+use Tribe__Events__Aggregator__Record__Queue_Interface;
+use Tribe__Events__Aggregator__Records as Records;
+use Tribe__Events__Aggregator__Service;
+use Tribe__Events__Main as TEC;
+use WP_Error;
+use WP_Post;
+
+/**
+ * Class Tribe__Events__Aggregator__Record__Batch_Queue - New Queue system to process imports crated with the new
+ * batch system.
+ *
+ * @since TBD
+ */
+class Batch_Queue implements Tribe__Events__Aggregator__Record__Queue_Interface {
+	/**
+	 * Set a name to identify the activity object.
+	 *
+	 * @since TBD
+	 *
+	 * @var string $activity_key Key to identify the activity object.
+	 */
 	public static $activity_key = 'activity';
 
 	/**
-	 * @var Tribe__Events__Aggregator__Record__Abstract
+	 * Access to the current record.
+	 *
+	 * @since TBD
+	 *
+	 * @var Tribe__Events__Aggregator__Record__Abstract $record The current record.
 	 */
 	public $record;
-
-	protected $importer;
 
 	/**
 	 * @var Tribe__Events__Aggregator__Record__Activity
@@ -18,52 +53,26 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 	protected $activity;
 
 	/**
-	 * Holds the Items that will be processed
-	 *
-	 * @var array
-	 */
-	public $items = [];
-
-	/**
-	 * Holds the Items that will be processed next
-	 *
-	 * @var array
-	 */
-	public $next = [];
-
-	/**
-	 * How many items are going to be processed
-	 *
-	 * @var int
-	 */
-	public $total = 0;
-
-	/**
-	 * @var Tribe__Events__Aggregator__Record__Queue_Cleaner
-	 */
-	protected $cleaner;
-
-	/**
 	 * Whether any real processing should happen for the queue or not.
+	 *
+	 * @since TBD
 	 *
 	 * @var bool
 	 */
 	protected $null_process = false;
 
 	/**
-	 * @var bool Whether this queue instance has acquired the lock or not.
-	 */
-	protected $has_lock = false;
-
-	/**
 	 * Tribe__Events__Aggregator__Record__Queue constructor.
 	 *
-	 * @param int|Tribe__Events__Aggregator__Record__Abstract       $record
-	 * @param Tribe__Events__Aggregator__Record__Queue_Cleaner|null $cleaner
+	 * @since TBD
+	 *
+	 * @param int|Tribe__Events__Aggregator__Record__Abstract       $record The current record or record ID.
+	 * @param array|string|null                                     $items The items to build the Queue.
+	 * @param Tribe__Events__Aggregator__Record__Queue_Cleaner|null $cleaner The cleaner to remove duplicates.
 	 */
-	public function __construct( $record, Tribe__Events__Aggregator__Record__Queue_Cleaner $cleaner = null ) {
+	public function __construct( $record, $items = null, Tribe__Events__Aggregator__Record__Queue_Cleaner $cleaner = null ) {
 		if ( is_numeric( $record ) ) {
-			$record = Tribe__Events__Aggregator__Records::instance()->get_by_post_id( $record );
+			$record = Records::instance()->get_by_post_id( $record );
 		}
 
 		if ( ! is_object( $record ) || ! $record instanceof \Tribe__Events__Aggregator__Record__Abstract ) {
@@ -85,21 +94,37 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 		$this->activity();
 	}
 
+	/**
+	 * Get the activity if a call to a dynamic attribute is taking place in this case `$this->>activity`
+	 *
+	 * @since TBD
+	 *
+	 * @param string $key The dynamic key to be returned.
+	 *
+	 * @return mixed|Tribe__Events__Aggregator__Record__Activity
+	 */
 	public function __get( $key ) {
-		switch ( $key ) {
-			case 'activity':
-				return $this->activity();
-				break;
+		if ( $key === 'activity' ) {
+			return $this->activity();
 		}
+
+		return null;
 	}
 
+	/**
+	 * Returns the activity object for the processing of this Queue.
+	 *
+	 * @since TBD
+	 *
+	 * @return mixed|Tribe__Events__Aggregator__Record__Activity
+	 */
 	public function activity() {
 		if ( empty( $this->activity ) ) {
 			if (
 				empty( $this->record->meta[ self::$activity_key ] )
 				|| ! $this->record->meta[ self::$activity_key ] instanceof Tribe__Events__Aggregator__Record__Activity
 			) {
-				$this->activity = new Tribe__Events__Aggregator__Record__Activity;
+				$this->activity = new Tribe__Events__Aggregator__Record__Activity();
 			} else {
 				$this->activity = $this->record->meta[ self::$activity_key ];
 			}
@@ -111,6 +136,8 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 	/**
 	 * Allows us to check if the Events Data has still pending
 	 *
+	 * @since TBD
+	 *
 	 * @return boolean
 	 */
 	public function is_fetching() {
@@ -118,7 +145,9 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 	}
 
 	/**
-	 * Shortcut to check how many items are going to be processed next
+	 * Shortcut to check how many items are going to be processed next.
+	 *
+	 * @since TBD
 	 *
 	 * @return int
 	 */
@@ -128,6 +157,8 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 
 	/**
 	 * Shortcut to check if this queue is empty or it has a null process.
+	 *
+	 * @since TBD
 	 *
 	 * @return boolean `true` if this queue instance has acquired the lock and
 	 *                 the count is 0, `false` otherwise.
@@ -140,12 +171,19 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 		return ! $this->is_in_progress();
 	}
 
+	/**
+	 * After the process has been completed make sure the `post_modified` and `post_status` are updated accordingly.
+	 *
+	 * @since TBD
+	 *
+	 * @return $this
+	 */
 	protected function complete() {
-		// Updates the Modified time for the Record Log
+		// Updates the Modified time for the Record Log.
 		$args = [
 			'ID'            => $this->record->post->ID,
-			'post_modified' => date( Tribe__Date_Utils::DBDATETIMEFORMAT, current_time( 'timestamp' ) ),
-			'post_status'   => Tribe__Events__Aggregator__Records::$status->success,
+			'post_modified' => $this->now(),
+			'post_status'   => Records::$status->success,
 		];
 
 		wp_update_post( $args );
@@ -156,14 +194,28 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 	/**
 	 * Processes a batch for the queue
 	 *
+	 * @since TBD
+	 *
+	 * @throws Exception
+	 *
+	 * @param null $batch_size The batch size is ignored on batch import as is controlled via the initial filtered value.
+	 *
 	 * @return self|Tribe__Events__Aggregator__Record__Activity
 	 */
 	public function process( $batch_size = null ) {
+		// This batch has not started yet, make sure to initiate this import.
 		if ( empty( $this->record->meta['batch_started'] ) ) {
+			$now = $this->now();
+
+			if ( ! $now instanceof DateTime ) {
+				return $this;
+			}
+
 			$this->record->update_meta(
 				'batch_started',
-				( new DateTime( 'now', new DateTimeZone( 'UTC' ) ) )->format( Tribe__Date_Utils::DBDATETIMEFORMAT )
+				$now->format( Dates::DBDATETIMEFORMAT )
 			);
+			$this->record->update_meta( Tribe__Events__Aggregator__Record__Queue::$queue_key, 'fetch' );
 			$this->record->set_status_as_pending();
 			$this->start();
 
@@ -177,6 +229,22 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 		return $this->activity();
 	}
 
+	/**
+	 * Get the current date time using UTC as the time zone.
+	 *
+	 * @since TBD
+	 *
+	 * @return DateTime|false|\Tribe\Utils\Date_I18n
+	 */
+	private function now() {
+		return Dates::build_date_object( 'now', new DateTimeZone( 'UTC' ) );
+	}
+
+	/**
+	 * Create the initial request to the EA server requesting that the client is ready to start getting batches of events.
+	 *
+	 * @since TBD
+	 */
 	public function start() {
 		if (
 			empty( $this->record->meta['allow_batch_push'] )
@@ -206,9 +274,9 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 		$service->api['version'] = 'v2.0.0';
 
 		$body = [
-			'batch_size'       => apply_filters( 'event_aggregator_event_batch_size', 10 ),
-			'batch_interval'   => apply_filters( 'event_aggregator_event_batch_interval', 10 ),
-			'tec_version'      => Tribe__Events__Main::VERSION,
+			'batch_size'       => $this->batch_size(),
+			'batch_interval'   => $this->batch_interval(),
+			'tec_version'      => TEC::VERSION,
 			'next_import_hash' => $this->record->meta['next_batch_hash'],
 			'api'              => get_rest_url( get_current_blog_id(), 'tribe/event-aggregator/v1' ),
 		];
@@ -217,7 +285,7 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 			$body['selected_events'] = $this->record->meta['ids_to_import'];
 		}
 
-		$response = $service->post( "import/{$this->record->meta['import_id']}}/deliver/", [ 'body' => $body ] );
+		$response = $service->post( "import/{$this->record->meta['import_id']}/deliver/", [ 'body' => $body ] );
 
 		if ( is_wp_error( $response ) ) {
 			$this->record->set_status_as_failed( $response );
@@ -227,16 +295,55 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 	}
 
 	/**
+	 * Return the number of events delivered per batch.
+	 *
+	 * @since TBD
+	 *
+	 * @return int
+	 */
+	private function batch_size() {
+		return (int) apply_filters( 'event_aggregator_event_batch_size', 10 );
+	}
+
+	/**
+	 * Return the interval in seconds of the delivery of each batch.
+	 *
+	 * @since TBD
+	 *
+	 * @return int
+	 */
+	private function batch_interval() {
+		return (int) apply_filters( 'event_aggregator_event_batch_interval', 10 );
+	}
+
+	/**
 	 * Returns the total progress made on processing the queue so far as a percentage.
+	 *
+	 * @since TBD
 	 *
 	 * @return int
 	 */
 	public function progress_percentage() {
-		if ( empty( $this->record ) || empty( $this->record->meta['percentage_complete'] ) ) {
+		if ( empty( $this->record ) ) {
 			return 0;
 		}
 
-		return (int) $this->record->meta['percentage_complete'];
+		if ( empty( $this->record->meta['total_events'] ) ) {
+			// Backwards compatible if the total_events meta key is still not present.
+			if ( empty( $this->record->meta['percentage_complete'] ) ) {
+				return 0;
+			}
+			return (int) $this->record->meta['percentage_complete'];
+		}
+
+		$total = (int) $this->record->meta['total_events'];
+		$done = (int) $this->record->activity()->count( TEC::POSTTYPE );
+
+		if ( 0 === $total ) {
+			return 100;
+		}
+
+		return min( 100, max( 1, (int) ( 100 * ( $done / $total ) ) ) );
 	}
 
 	/**
@@ -246,18 +353,26 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 	 *
 	 * The flag naturally expires after an hour to allow for recovery if for instance
 	 * execution hangs half way through the processing of a batch.
+	 *
+	 * @since TBD
 	 */
 	public function set_in_progress_flag() {
+		// No operation.
 	}
 
 	/**
 	 * Clears the in progress flag.
+	 *
+	 * @since TBD
 	 */
 	public function clear_in_progress_flag() {
+		// No operation.
 	}
 
 	/**
 	 * Indicates if the queue for the current event is actively being processed.
+	 *
+	 * @since TBD
 	 *
 	 * @return bool
 	 */
@@ -270,16 +385,18 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 			return false;
 		}
 
-		return $this->record->post->post_status === Tribe__Events__Aggregator__Records::$status->pending;
+		return $this->record->post->post_status === Records::$status->pending;
 	}
 
 	/**
 	 * Returns the primary post type the queue is processing
 	 *
+	 * @since TBD
+	 *
 	 * @return string
 	 */
 	public function get_queue_type() {
-		$item_type = Tribe__Events__Main::POSTTYPE;
+		$item_type = TEC::POSTTYPE;
 
 		if ( ! empty( $this->record->origin ) && 'csv' === $this->record->origin ) {
 			$item_type = $this->record->meta['content_type'];
@@ -291,9 +408,9 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 	/**
 	 * Whether the current queue process is stuck or not.
 	 *
-	 * @since 4.6.21
+	 * @since TBD
 	 *
-	 * @return mixed
+	 * @return bool
 	 */
 	public function is_stuck() {
 		return false;
@@ -302,7 +419,7 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 	/**
 	 * Orderly closes the queue process.
 	 *
-	 * @since 4.6.21
+	 * @since TBD
 	 *
 	 * @return bool
 	 */
@@ -313,7 +430,7 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 	/**
 	 * Whether the current queue process failed or not.
 	 *
-	 * @since 4.6.21
+	 * @since TBD
 	 *
 	 * @return bool
 	 */
@@ -324,7 +441,7 @@ class Tribe__Events__Aggregator__Record__Batch_Queue implements Tribe__Events__A
 	/**
 	 * Returns the queue error message.
 	 *
-	 * @since 4.6.21
+	 * @since TBD
 	 *
 	 * @return string
 	 */
