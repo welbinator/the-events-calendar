@@ -62,6 +62,7 @@ class Tribe__Events__Aggregator__REST__V1__Endpoints__Batch
 
 		// let's make sure it's a nested object
 		$items = json_decode( json_encode( $request['events'] ) );
+		$items = is_array( $items ) ? $items : [];
 
 		$is_last_batch = (int) $request['status']['batch']['total'] === ( (int) $request['status']['batch']['done'] + 1 );
 
@@ -177,7 +178,6 @@ class Tribe__Events__Aggregator__REST__V1__Endpoints__Batch
 		 */
 		return apply_filters( 'tribe_aggregator_batch_data_processing_enabled', true );
 	}
-
 
 	/**
 	 * Validates the status information sent by the server.
