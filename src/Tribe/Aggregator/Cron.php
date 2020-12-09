@@ -484,7 +484,6 @@ class Tribe__Events__Aggregator__Cron {
 						'compare' => 'NOT EXISTS',
 					],
 				],
-				'after'          => '-4 hours',
 			]
 		);
 	}
