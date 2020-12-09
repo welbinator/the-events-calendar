@@ -66,7 +66,7 @@ class Tribe__Events__Aggregator__Cron {
 		add_action( self::$single_action, [ $this, 'run' ] );
 
 		// Decreases limit after each Request, runs late for security
-		add_filter( 'pre_http_request', [ $this, 'filter_check_http_limit' ], 25, 3 );
+		// add_filter( 'pre_http_request', [ $this, 'filter_check_http_limit' ], 25, 3 );
 
 		// Add the Actual Process to run on the Action
 		add_action( 'tribe_aggregator_cron_run', [ $this, 'verify_child_record_creation' ], 5 );
