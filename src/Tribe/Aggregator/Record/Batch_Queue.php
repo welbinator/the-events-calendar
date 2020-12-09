@@ -203,6 +203,11 @@ class Batch_Queue implements Tribe__Events__Aggregator__Record__Queue_Interface 
 	 * @return self|Tribe__Events__Aggregator__Record__Activity
 	 */
 	public function process( $batch_size = null ) {
+
+		if ( $this->is_empty() ) {
+			return $this;
+		}
+
 		// This batch has not started yet, make sure to initiate this import.
 		if ( empty( $this->record->meta['batch_started'] ) ) {
 			$now = $this->now();
