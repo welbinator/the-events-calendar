@@ -355,7 +355,7 @@ class Tribe__Events__Aggregator__Cron {
 				continue;
 			}
 
-			// Creating the child records based on this Parent
+			/** @var Tribe__Events__Aggregator__Record__Abstract $child */
 			$child = $record->create_child_record();
 			tribe( 'logger' )->log_debug( sprintf( 'Creating child record %d for %d', $child->id, $record->id ), 'EA Cron' );
 
@@ -373,7 +373,12 @@ class Tribe__Events__Aggregator__Cron {
 
 					$record->update_meta( 'last_import_status', 'success:queued' );
 
-					$this->maybe_process_immediately( $child );
+					if ( $child->is_polling() ) {
+						$this->maybe_process_immediately( $child );
+					} else {
+						// For batch pushing pull them right away as batch system will deliver once ready.
+						$child->process_posts( [], true );
+					}
 				} elseif ( is_numeric( $response ) ) {
 					// it's the post ID of a rescheduled record
 					tribe( 'logger' )->log_debug( sprintf( 'rescheduled — %s', $response ), 'EA Cron' );
