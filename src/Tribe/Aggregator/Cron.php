@@ -440,7 +440,7 @@ class Tribe__Events__Aggregator__Cron {
 				continue;
 			}
 
-			$cleaner->set_stall_limit( HOUR_IN_SECONDS * 22 )->set_time_to_live( HOUR_IN_SECONDS * 23 );
+			$cleaner->set_stall_limit( HOUR_IN_SECONDS * 4 );
 
 			$cleaner->remove_duplicate_pending_records_for( $record );
 			$failed = $cleaner->maybe_fail_stalled_record( $record );
