@@ -1,0 +1,157 @@
+/* -----------------------------------------------------------------------------
+ *
+ * Datepicker
+ *
+ * ----------------------------------------------------------------------------- */
+
+.tribe-events {
+
+	.datepicker {
+		margin-top: var(--spacer-1);
+		padding: 0 var(--spacer-3) var(--spacer-3);
+
+		.tribe-common--breakpoint-medium& {
+			margin-top: var(--spacer-3);
+		}
+
+		table {
+			border-collapse: collapse;
+			table-layout: fixed;
+		}
+
+		.datepicker-switch,
+		.prev,
+		.next {
+			padding: var(--spacer-4) 0;
+			vertical-align: middle;
+		}
+
+		.prev,
+		.next {
+
+			.tribe-events-c-top-bar__datepicker-nav-icon-svg {
+				margin-right: auto;
+				height: 15px;
+				width: 9px;
+
+				path {
+					fill: currentColor;
+				}
+			}
+		}
+
+		.next .tribe-events-c-top-bar__datepicker-nav-icon-svg {
+			margin-left: auto;
+			margin-right: 0;
+		}
+
+		.datepicker-months,
+		.datepicker-years {
+
+			th,
+			td {
+				padding: 0;
+			}
+
+			.datepicker-switch,
+			.prev,
+			.next {
+				padding: var(--spacer-4) 0 var(--spacer-1);
+			}
+		}
+
+		.dow {
+			padding: 0;
+			width: var(--grid-width-1-of-7);
+		}
+
+		.day {
+			padding: 11px 0;
+			width: 48px;
+		}
+
+		.month,
+		.year {
+			height: auto;
+			margin: 0;
+			padding: 15px 0;
+			width: 25%;
+		}
+	}
+
+	/* -----------------------------------------------------------------------------
+	 *
+	 * Datepicker: V1 Style Overrides
+	 *
+	 * ----------------------------------------------------------------------------- */
+
+	.admin-bar & .datepicker {
+		margin-top: var(--spacer-1);
+	}
+
+	.admin-bar &.tribe-common--breakpoint-medium .datepicker {
+		margin-top: var(--spacer-3);
+	}
+
+	/* -----------------------------------------------------------------------------
+	 *
+	 * Datepicker: Theme Overrides
+	 *
+	 * ----------------------------------------------------------------------------- */
+
+	/* -----------------------------------------------------------------------------
+	 * Theme Overrides - Divi
+	 * ----------------------------------------------------------------------------- */
+
+	.tribe-theme-divi #content-area & .datepicker {
+
+		.datepicker-switch,
+		.prev,
+		.next {
+			padding: var(--spacer-4) 0;
+		}
+
+		.datepicker-months,
+		.datepicker-years {
+
+			.datepicker-switch,
+			.prev,
+			.next {
+				padding: var(--spacer-4) 0 var(--spacer-1);
+			}
+		}
+
+		.dow {
+			padding: 0;
+		}
+
+		.day {
+			padding: 11px 0;
+		}
+	}
+
+	/* -----------------------------------------------------------------------------
+	 * Theme Overrides - Enfold
+	 * ----------------------------------------------------------------------------- */
+
+	.tribe-theme-enfold & .datepicker {
+		min-width: 0;
+		padding: 0 var(--spacer-3) var(--spacer-3);
+
+		.datepicker-switch {
+			cursor: pointer !important;
+		}
+	}
+
+	/* -----------------------------------------------------------------------------
+	 * Theme Overrides - Avada
+	 * ----------------------------------------------------------------------------- */
+
+	.tribe-theme-avada & .datepicker {
+		padding: 0 var(--spacer-3) var(--spacer-3);
+
+		.datepicker-months td {
+			padding: 0;
+		}
+	}
+}

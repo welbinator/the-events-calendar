@@ -1,0 +1,80 @@
+/* -----------------------------------------------------------------------------
+ *
+ * Events Bar
+ *
+ * ----------------------------------------------------------------------------- */
+
+.tribe-events {
+
+	.tribe-events-header--has-event-search .tribe-events-c-events-bar {
+		
+		.tribe-common--breakpoint-medium& {
+			background-color: var(--color-background);
+		}
+	}
+
+	.tribe-events-c-events-bar--border {
+
+		.tribe-common--breakpoint-medium& {
+			border: 1px solid var(--color-border-secondary);
+		}
+	}
+
+	.tribe-events-c-events-bar__search-button {
+		display: flex;
+
+		&:hover,
+		&:focus {
+			opacity: var(--opacity-icon-hover);
+		}
+
+		&:active {
+			opacity: var(--opacity-icon-active);
+		}
+
+		&:before {
+			background-color: var(--color-accent-primary);
+			content: '';
+			display: none;
+			height: 2px;
+			pointer-events: none;
+			position: absolute;
+			top: 100%;
+			transform: translateY(var(--spacer-0));
+			width: calc(100% - (2 * var(--spacer-0)));
+		}
+	}
+
+	.tribe-events-c-events-bar__search-button--active {
+
+		&:before {
+			display: block;
+		}
+	}
+
+	.tribe-events-c-events-bar__search-button-icon-svg path {
+		fill: var(--color-icon-active);
+	}
+
+	/* -----------------------------------------------------------------------------
+	 *
+	 * Events Bar: Theme Overrides
+	 *
+	 * ----------------------------------------------------------------------------- */
+	
+	/* -----------------------------------------------------------------------------
+	 * Theme Overrides - Twenty Seventeen
+	 * ----------------------------------------------------------------------------- */
+	 
+	.tribe-theme-twentyseventeen.colors-dark & {
+		
+		.tribe-events-c-events-bar__search-button {
+			
+			&,
+			&:hover,
+			&:focus {
+				background-color: transparent;
+			}
+		}
+	}
+}
