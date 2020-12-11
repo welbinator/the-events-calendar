@@ -19,7 +19,7 @@ class Tribe__Events__Importer__File_Reader {
 		$this->lines = $this->file->key();
 		$this->file->rewind();
 
-		add_filter( 'tribe_events_import_row', array( $this, 'sanitize_row' ) );
+		// add_filter( 'tribe_events_import_row', array( $this, 'sanitize_row' ) );
 	}
 
 	public function __destruct() {
