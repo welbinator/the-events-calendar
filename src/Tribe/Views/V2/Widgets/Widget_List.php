@@ -39,6 +39,13 @@ class Widget_List extends Widget_Abstract {
 	 *
 	 * @var string
 	 */
+	protected $asset_slug = 'tribe-events-list-widget-v2';
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @var string
+	 */
 	protected $view_admin_slug = 'widgets/list';
 
 	/**
@@ -76,6 +83,16 @@ class Widget_List extends Widget_Abstract {
 	/**
 	 * {@inheritDoc}
 	 */
+	public function setup_view( $arguments ) {
+		parent::setup_view( $arguments );
+
+		add_filter( 'tribe_customizer_should_print_widget_customizer_styles', '__return_true' );
+		add_filter( 'tribe_customizer_inline_stylesheets', [ $this, 'add_full_stylesheet_to_customizer' ], 12, 2 );
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
 	public function enqueue_assets( $context, $view ) {
 		parent::enqueue_assets( $context, $view );
 
@@ -95,7 +112,7 @@ class Widget_List extends Widget_Abstract {
 
 		$default_arguments['description'] = esc_html_x( 'A widget that displays upcoming events.', 'The description of the List Widget.', 'the-events-calendar' );
 		// @todo update name once this widget is ready to replace the existing list widget.
-		$default_arguments['name']                          = esc_html_x( 'Events List V2', 'The name of the widget.', 'the-events-calendar' );
+		$default_arguments['name']                          = esc_html_x( 'Events List', 'The name of the List Widget.', 'the-events-calendar' );
 		$default_arguments['widget_options']['description'] = esc_html_x( 'A widget that displays upcoming events.', 'The description of the List Widget.', 'the-events-calendar' );
 		// Setup default title.
 		$default_arguments['title'] = _x( 'Upcoming Events', 'The default title of the List Widget.', 'the-events-calendar' );
@@ -114,7 +131,7 @@ class Widget_List extends Widget_Abstract {
 		$updated_instance['limit']                = $new_instance['limit'];
 		$updated_instance['no_upcoming_events']   = ! empty( $new_instance['no_upcoming_events'] );
 		$updated_instance['featured_events_only'] = ! empty( $new_instance['featured_events_only'] );
-		$updated_instance['jsonld_enable']        = (int) ( ! empty( $new_instance['jsonld_enable'] ) );
+		$updated_instance['jsonld_enable']        = ! empty( $new_instance['jsonld_enable'] );
 		$updated_instance['tribe_is_list_widget'] = ! empty( $new_instance['tribe_is_list_widget'] );
 
 		return $this->filter_updated_instance( $updated_instance, $new_instance );
@@ -124,7 +141,6 @@ class Widget_List extends Widget_Abstract {
 	 * {@inheritDoc}
 	 */
 	public function setup_admin_fields() {
-
 		return [
 			'title'                => [
 				'label' => _x( 'Title:', 'The label for the field of the title of the List Widget.', 'the-events-calendar' ),
@@ -136,7 +152,7 @@ class Widget_List extends Widget_Abstract {
 				'options' => $this->get_limit_options(),
 			],
 			'no_upcoming_events'   => [
-				'label' => _x( 'Show widget only if there are upcoming events', 'The label for the option to hide the List Widget if no upcoming events.', 'the-events-calendar' ),
+				'label' => _x( 'Hide this widget if there are no upcoming events.', 'The label for the option to hide the List Widget if no upcoming events.', 'the-events-calendar' ),
 				'type'  => 'checkbox',
 			],
 			'featured_events_only' => [
@@ -144,17 +160,16 @@ class Widget_List extends Widget_Abstract {
 				'type'  => 'checkbox',
 			],
 			'jsonld_enable'        => [
-				'label' => _x( 'Generate JSON-LD data', 'The label for the option to enable JSONLD in the List Widget.', 'the-events-calendar' ),
+				'label' => _x( 'Generate JSON-LD data', 'The label for the option to enable JSON-LD in the List Widget.', 'the-events-calendar' ),
 				'type'  => 'checkbox',
 			],
-
 		];
 	}
 
 	/**
 	 * Get the options to use in a the limit dropdown.
 	 *
-	 * @since TBD
+	 * @since 5.3.0
 	 *
 	 * @return array<string,mixed> An array of options with the text and value included.
 	 */
@@ -162,7 +177,7 @@ class Widget_List extends Widget_Abstract {
 		/**
 		 * Filter the max limit of events to display in the List Widget.
 		 *
-		 * @since TBD
+		 * @since 5.3.0
 		 *
 		 * @param int The max limit of events to display in the List Widget, default 10.
 		 */
@@ -187,14 +202,13 @@ class Widget_List extends Widget_Abstract {
 		$alterations = parent::args_to_context( $arguments, $context );
 
 		// Only Featured Events.
-		if ( tribe_is_truthy( $arguments['featured_events_only'] ) ) {
-			$alterations['featured'] = true;
-		}
+		$alterations['featured'] = tribe_is_truthy( $arguments['featured_events_only'] );
+
+		// Enable JSON-LD?
+		$alterations['jsonld_enable'] = (int) tribe_is_truthy( $arguments['jsonld_enable'] );
 
 		// Hide widget if no events.
-		if ( tribe_is_truthy( $arguments['no_upcoming_events'] ) ) {
-			$alterations['no_upcoming_events'] = true;
-		}
+		$alterations['no_upcoming_events'] = tribe_is_truthy( $arguments['no_upcoming_events'] );
 
 		// Add posts per page.
 		$alterations['events_per_page'] = (int) isset( $arguments['limit'] ) && $arguments['limit'] > 0 ?
@@ -204,11 +218,46 @@ class Widget_List extends Widget_Abstract {
 		/**
 		 * Applies a filter to the args to context.
 		 *
-		 * @since TBD
+		 * @since 5.3.0
 		 *
 		 * @param array<string,mixed> $alterations The alterations to make to the context.
 		 * @param array<string,mixed> $arguments   Current set of arguments.
 		 */
 		return apply_filters( 'tribe_events_views_v2_list_widget_args_to_context', $alterations, $arguments );
+	}
+
+	/**
+	 * Empties the json_ld_data if jsonld_enable is false,
+	 * removing the need for additional checks in the template.
+	 *
+	 * @since 5.3.0
+	 *
+	 * @param array<string,mixed> $template_vars The current template variables.
+	 *
+	 * @return array<string,mixed> The modified template variables.
+	 */
+	public function disable_json_data( $template_vars ) {
+		if (
+			isset( $template_vars['jsonld_enable'] )
+			&& ! tribe_is_truthy( $template_vars['jsonld_enable'] )
+		) {
+			$template_vars['json_ld_data'] = '';
+		}
+
+		return $template_vars;
+	}
+
+	/**
+	 * Add full events list widget stylesheets to customizer styles array to check.
+	 *
+	 * @since 5.3.0
+	 *
+	 * @param array<string> $sheets       Array of sheets to search for.
+	 * @param string        $css_template String containing the inline css to add.
+	 *
+	 * @return array Modified array of sheets to search for.
+	 */
+	public function add_full_stylesheet_to_customizer( $sheets, $css_template ) {
+		return array_merge( $sheets, [ 'tribe-events-widgets-v2-events-list-full' ] );
 	}
 }

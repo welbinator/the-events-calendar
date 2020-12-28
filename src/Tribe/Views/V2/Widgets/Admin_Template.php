@@ -1,8 +1,8 @@
 <?php
 /**
- * Widget Admin Templates
+ * Widget Admin Template - handles the presentation on the widgets in the admin.
  *
- * @since   TBD
+ * @since   5.3.0
  *
  * @package Tribe\Events\Views\V2\Widgets
  */
@@ -12,16 +12,17 @@ namespace Tribe\Events\Views\V2\Widgets;
 /**
  * Class Admin_Template
  *
- * @since   TBD
+ * @since   5.3.0
  *
  * @package Tribe\Events\Views\V2\Widgets
  */
 class Admin_Template extends \Tribe__Template {
-
 	/**
 	 * Template constructor.
 	 *
-	 * @since TBD
+	 * Sets the correct paths for templates in this plugin (as opposed to The Events Calendar).
+	 *
+	 * @since 5.3.0
 	 */
 	public function __construct() {
 		$this->set_template_origin( tribe( 'tec.main' ) );

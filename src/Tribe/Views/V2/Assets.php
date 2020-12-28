@@ -35,7 +35,7 @@ class Assets extends \tad_DI52_ServiceProvider {
 	/**
 	 * Key for the widget group of assets.
 	 *
-	 * @since TBD
+	 * @since 5.3.0
 	 *
 	 * @var string
 	 */
@@ -49,6 +49,33 @@ class Assets extends \tad_DI52_ServiceProvider {
 	 * @var bool
 	 */
 	protected $should_enqueue_frontend;
+
+	/**
+	 * Applies a filter to allow users that are experiencing issues w/ the Views v2 datepicker to load
+	 * it in no-conflict mode.
+	 *
+	 * When loaded in no-conflict mode, then the jquery-ui-datepicker script bundled with WordPress will be
+	 * loaded before it.
+	 *
+	 * @since 5.3.0
+	 *
+	 * @return bool Whether to load Views v2 datepicker in no conflict mode, loading the jquery-ui-datepicker
+	 *              script before it, or not
+	 */
+	protected static function datepicker_no_conflict_mode() {
+		/**
+		 * Filters whether to load the Bootstrap datepicker in no-conflict mode in the context of Views v2 or not.
+		 *
+		 * When loaded in no-conflict mode, then the jquery-ui-datepicker script bundled with WordPress will be
+		 * loaded before it.
+		 *
+		 * @since 5.3.0
+		 *
+		 * @param bool $load_no_conflict_moode whether to load the Bootstrap datepicker in no-conflict mode in
+		 *                                     the context of Views v2 or not.
+		 */
+		return apply_filters( 'tribe_events_views_v2_datepicker_no_conflict', false );
+	}
 
 	/**
 	 * Binds and sets up implementations.
@@ -110,25 +137,8 @@ class Assets extends \tad_DI52_ServiceProvider {
 
 		tribe_asset(
 			$plugin,
-			'tribe-events-widgets-v2-base-skeleton',
-			'widgets-base-skeleton.css',
-			[
-				'tribe-common-skeleton-style',
-			],
-			null,
-			[
-				'priority' => 15,
-				'groups'   => [ static::$widget_group_key ],
-			]
-		);
-
-		tribe_asset(
-			$plugin,
 			'tribe-events-widgets-v2-events-list-skeleton',
 			'widget-events-list-skeleton.css',
-			[
-				'tribe-events-widgets-v2-base-skeleton',
-			],
 			null,
 			[
 				'priority' => 15,
@@ -149,11 +159,16 @@ class Assets extends \tad_DI52_ServiceProvider {
 			]
 		);
 
+		$bootstrap_datepicker_dependencies = [ 'jquery' ];
+		if ( static::datepicker_no_conflict_mode() ) {
+			$bootstrap_datepicker_dependencies[] = 'jquery-ui-datepicker';
+		}
+
 		tribe_asset(
 			$plugin,
 			'tribe-events-views-v2-bootstrap-datepicker',
 			'vendor/bootstrap-datepicker/js/bootstrap-datepicker.js',
-			[ 'jquery' ],
+			$bootstrap_datepicker_dependencies,
 			'wp_enqueue_scripts',
 			[
 				'priority'     => 10,
