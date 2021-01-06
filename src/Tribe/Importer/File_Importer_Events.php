@@ -106,6 +106,15 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 		return reset( $matches );
 	}
 
+	/**
+	 *
+	 *
+	 * @since TBD
+	 *
+	 * @param $uid
+	 *
+	 * @return int|mixed
+	 */
 	protected function match_uid( $uid ) {
 
 		//todo match by uid and if found return
@@ -135,15 +144,15 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 		/**
 		 * Add an option to change the $matches that are duplicates.
 		 *
-		 * @since 4.6.15
+		 * @since TBD
 		 *
 		 * @param array $matches    Array with the duplicate matches
 		 * @param array $query_args Array with the arguments used to get the posts.
 		 */
-		$matches = (array) apply_filters( 'tribe_events_import_event_duplicate_matches', get_posts( $query_args ), $query_args );
+		$matches = (array) apply_filters( 'tribe_events_import_event_uid_duplicate_matches', get_posts( $query_args ), $query_args );
 
 		if ( empty( $matches ) ) {
-			return 0;
+			return false;
 		}
 
 		return reset( $matches );
