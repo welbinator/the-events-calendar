@@ -9,11 +9,6 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 	protected $required_fields = [ 'event_name', 'event_start_date' ];
 
 	/**
-	 * @var string The meta field name to store and retrieve the manually defined uid.
-	 */
-	protected $uid = '_tribe_event_csv_uid';
-
-	/**
 	 * Searches the database for an existing event matching the one described
 	 * by the specified record.
 	 *
@@ -29,11 +24,9 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 		$all_day    = $this->get_boolean_value_by_key( $record, 'event_all_day' );
 		$uid        = $this->get_value_by_key( $record, 'event_uid' );
 
-		//todo match by uid and if found return
-		// method to get by uid
-		// return in this method
+		//todo make this into a method
 		if ( $uid ) {
-			$uid_match = $this->match_uid( $uid );
+			$uid_match = $this->match_uid( $uid, $this->event_uid_meta_key );
 			if ( $uid_match ) {
 				return $uid_match;
 			}
@@ -106,58 +99,6 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 		return reset( $matches );
 	}
 
-	/**
-	 *
-	 *
-	 * @since TBD
-	 *
-	 * @param $uid
-	 *
-	 * @return int|mixed
-	 */
-	protected function match_uid( $uid ) {
-
-		//todo match by uid and if found return
-		// method to get by uid
-		// return in this method
-		// Base query - only the meta query will be different
-		$query_args = array(
-			'post_type'        => Tribe__Events__Main::POSTTYPE,
-			'fields'           => 'ids',
-			'posts_per_page'   => 1,
-			'suppress_filters' => false,
-			'post_status'      => 'any',
-		);
-
-		$meta_query = array(
-			array(
-				'key'     => $this->uid,
-				'value'   => $uid,
-				'compare' => '=',
-			),
-		);
-
-		$query_args['meta_query']                   = $meta_query;
-		$query_args['tribe_remove_date_filters']    = true;
-		$query_args['tribe_suppress_query_filters'] = true;
-
-		/**
-		 * Add an option to change the $matches that are duplicates.
-		 *
-		 * @since TBD
-		 *
-		 * @param array $matches    Array with the duplicate matches
-		 * @param array $query_args Array with the arguments used to get the posts.
-		 */
-		$matches = (array) apply_filters( 'tribe_events_import_event_uid_duplicate_matches', get_posts( $query_args ), $query_args );
-
-		if ( empty( $matches ) ) {
-			return false;
-		}
-
-		return reset( $matches );
-	}
-
 	protected function update_post( $post_id, array $record ) {
 
 		$update_authority_setting = tribe( 'events-aggregator.settings' )->default_update_authority( 'csv' );
@@ -187,11 +128,11 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 
 		Tribe__Events__API::updateEvent( $post_id, $event );
 
-		var_dump('updating');
 		//todo save the uid meta
+		//todo change this to use the method
 		if ( isset( $event[ 'tribe_event_csv_uid' ] ) ) {
 			var_dump( $event['tribe_event_csv_uid']);
-			update_metadata( 'post', $post_id, $this->uid, $event['tribe_event_csv_uid'] );
+			update_metadata( 'post', $post_id, $this->event_uid_meta_key, $event['tribe_event_csv_uid'] );
 		}
 
 		$this->stop_watching_term_creation();
@@ -218,11 +159,10 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 
 		$id = Tribe__Events__API::createEvent( $event );
 
-		//todo save the uid meta
-		var_dump('creating');
+		// todo change this to use the method
+		// Save the UID for the imported event.
 		if ( isset( $event[ 'tribe_event_csv_uid' ] ) ) {
-			var_dump( $event);
-			update_metadata( 'post', $id, $this->uid, $event['tribe_event_csv_uid'] );
+			update_metadata( 'post', $id, $this->event_uid_meta_key, $event['tribe_event_csv_uid'] );
 		}
 
 		$this->stop_watching_term_creation();
@@ -362,8 +302,7 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 				}
 			}
 		}
-		var_dump('getevents');
-		var_dump($event);
+
 		return $event;
 	}
 
@@ -487,6 +426,16 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 	 * @return array
 	 */
 	private function find_matching_organizer_id( $record ) {
+
+		$uid = $this->get_value_by_key( $record, 'tribe_organizer_uid' );
+		//todo make this into a method and support the space and comma seperated
+		if ( $uid ) {
+			$uid_match = $this->match_uid( $uid, $this->organizer_uid_meta_key, Tribe__Events__Main::ORGANIZER_POST_TYPE );
+			if ( $uid_match ) {
+				return $uid_match;
+			}
+		}
+
 		$organizer = $this->get_value_by_key( $record, 'event_organizer_name' );
 
 		// Test for space-separated IDs separately
@@ -511,6 +460,15 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 	}
 
 	private function find_matching_venue_id( $record ) {
+		$uid = $this->get_value_by_key( $record, 'tribe_venue_uid' );
+		//todo make this into a method
+		if ( $uid ) {
+			$uid_match = $this->match_uid( $uid, $this->venue_uid_meta_key, Tribe__Events__Main::VENUE_POST_TYPE );
+			if ( $uid_match ) {
+				return $uid_match;
+			}
+		}
+
 		$name = $this->get_value_by_key( $record, 'event_venue_name' );
 
 		return $this->find_matching_post_id( $name, Tribe__Events__Venue::POSTTYPE, 'any' );

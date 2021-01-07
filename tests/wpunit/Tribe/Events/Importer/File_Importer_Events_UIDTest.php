@@ -9,6 +9,23 @@ use Tribe\Events\Test\Factories\Organizer;
 
 class File_Importer_Events_UIDTest extends File_Importer_EventsTest {
 
+	protected $field_map = [
+		'event_name',
+		'event_uid',
+		'event_description',
+		'event_start_date',
+		'event_start_time',
+		'event_end_date',
+		'event_end_time',
+		'event_all_day',
+		'tribe_venue_uid',
+		'tribe_venue_name',
+		'tribe_organizer_uid',
+		'tribe_organizer_name',
+		'event_category',
+		'event_website',
+	];
+
 	public function setUp() {
 		parent::setUp();
 		static::factory()->venue     = new Venue();
@@ -18,12 +35,12 @@ class File_Importer_Events_UIDTest extends File_Importer_EventsTest {
 	public function get_venue_name_and_id() {
 		$venue_name = 'Venue Export/Import Business';
 		$venue_args = [
-			'_VenueAddress'       => '6500 Springfield Mall',
-			'_VenueCity'          => 'Springfield',
-			'_VenueStateProvince' => 'VA',
-			'_VenueZip'           => '22150',
-			'_VenueCountry'       => 'US',
-			'_tribe_venue_uid'    => 'venueUID1',
+			'_VenueAddress'        => '6500 Springfield Mall',
+			'_VenueCity'           => 'Springfield',
+			'_VenueStateProvince'  => 'VA',
+			'_VenueZip'            => '22150',
+			'_VenueCountry'        => 'US',
+			'_tribe_venue_csv_uid' => 'venueUID1',
 		];
 		$venue      = $this->factory()->venue->create( [ 'post_title' => $venue_name, 'meta_input' => $venue_args ] );
 
@@ -36,10 +53,10 @@ class File_Importer_Events_UIDTest extends File_Importer_EventsTest {
 	public function get_organizer_name_and_id() {
 		$organizer_name = 'Organizer Import 1';
 		$organizer_args = [
-			'_OrganizerEmail'      => '6500 Springfield Mall',
-			'_OrganizerWebsite'    => 'Springfield',
-			'_OrganizerPhone'      => 'VA',
-			'_tribe_organizer_uid' => 'organizerUID1',
+			'_OrganizerEmail'          => '6500 Springfield Mall',
+			'_OrganizerWebsite'        => 'Springfield',
+			'_OrganizerPhone'          => 'VA',
+			'_tribe_organizer_csv_uid' => 'organizerUID1',
 		];
 		$organizer      = $this->factory()->organizer->create( [ 'post_title' => $organizer_name, 'meta_input' => $organizer_args ] );
 
@@ -65,77 +82,70 @@ class File_Importer_Events_UIDTest extends File_Importer_EventsTest {
 	 * @test
 	 */
 	public function it_should_import_with_a_uid_and_save_to_meta() {
-
-		$sut = $this->make_instance();
-
-		$post_id = $sut->import_next_row();
-
-		var_dump( $post_id );
+		$this->data = [
+			'uid_1'         => 'ec22bluetest',
+			'name_1'        => 'TEC\'s Excellent Adventure',
+			'start_date_1'  => '11/19/21',
+			'end_date_1'    => '11/19/21',
+			'all_day_1'     => 'false',
+			'description_1' => 'Updated event description',
+		];
+		$sut        = $this->make_instance( 'event-uid' );
+		$post_id    = $sut->import_next_row();
 
 		$this->assertNotFalse( $post_id );
-		$this->assertEquals( 'mt22blue', get_post_meta( $post_id, '_tribe_event_csv_uid', true ) );
+		$this->assertEquals( 'ec22bluetest', get_post_meta( $post_id, '_tribe_event_csv_uid', true ) );
 	}
 
 	/**
 	 * @test
 	 */
 	public function it_should_update_existing_event_with_uid() {
-		$this->data        = [
-			'uid_1'         => 'mt22bluetest',
-			'name_1'        => 'Modern Tribe\'s Excellent Adventure',
+		$first_title = 'TEC\'s Excellent Adventure';
+		$this->data  = [
+			'uid_1'         => 'ec22bluetest',
+			'name_1'        => $first_title,
 			'start_date_1'  => '11/19/21',
 			'end_date_1'    => '11/19/21',
-			//'all_day_1' => 'false',
-			'description_1' => 'Updated event description',
+			'all_day_1'     => 'false',
+			'description_1' => 'Event description',
 		];
-		$this->field_map[] = 'event_uid';
-
-		$sut = $this->make_instance( 'event-uid' );
+		$sut         = $this->make_instance( 'event-uid' );
 
 		$first_post_id = $sut->import_next_row();
 		$this->assertNotFalse( $first_post_id );
 
-		//clean_post_cache( $first_post_id );
+		clean_post_cache( $first_post_id );
 
-		var_dump( $first_post_id );
-
-		$this->data = [
-			'uid_1'         => 'mt22bluetest',
+		$this->data     = [
 			'name_1'        => 'New Event Name',
+			'uid_1'         => 'ec22bluetest',
 			'start_date_1'  => '11/25/21',
 			'end_date_1'    => '11/25/21',
-			//'all_day_1' => 'false',
 			'description_1' => 'Updated event description',
 		];
-
-		$sut = $this->make_instance( 'event-uid' );
-
+		$sut            = $this->make_instance( 'event-uid' );
 		$second_post_id = $sut->import_next_row();
 
-		var_dump( $second_post_id );
-
 		$this->assertEquals( $first_post_id, $second_post_id );
-		$this->assertEquals( 'mt22blue', get_post_meta( $second_post_id, '_tribe_event_csv_uid', true ) );
+		$this->assertNotEquals( $first_title, get_the_title( $second_post_id ) );
+		$this->assertEquals( 'ec22bluetest', get_post_meta( $second_post_id, '_tribe_event_csv_uid', true ) );
 	}
 
 	/**
 	 * @test
 	 */
 	public function it_should_add_a_venue_using_the_venue_uid() {
-		$venue = $this->get_venue_name_and_id();
-
-		$this->data        = [
-			'uid_1'         => 'mt22bluetest',
-			'name_1'        => 'Modern Tribe\'s Excellent Adventure',
+		$venue      = $this->get_venue_name_and_id();
+		$this->data = [
+			'uid_1'         => 'ec22bluetest',
+			'name_1'        => 'TEC\'s Excellent Adventure',
 			'start_date_1'  => '11/19/21',
 			'end_date_1'    => '11/19/21',
-			//'all_day_1' => 'false',
 			'description_1' => 'Updated event description',
 			'venue_uid_1'   => 'venueUID1',
 		];
-		$this->field_map[] = 'event_uid';
-
-		$sut = $this->make_instance( 'event-uid' );
+		$sut        = $this->make_instance( 'event-uid' );
 
 		$first_post_id = $sut->import_next_row();
 
@@ -147,7 +157,22 @@ class File_Importer_Events_UIDTest extends File_Importer_EventsTest {
 	 * @test
 	 */
 	public function it_should_add_a_venue_using_the_venue_uid_even_when_venue_name_included() {
+		$venue      = $this->get_venue_name_and_id();
+		$this->data = [
+			'uid_1'         => 'ec22bluetest',
+			'name_1'        => 'TEC\'s Excellent Adventure',
+			'start_date_1'  => '11/19/21',
+			'end_date_1'    => '11/19/21',
+			'description_1' => 'Updated event description',
+			'venue_uid_1'   => 'venueUID1',
+			'venue_name_1'  => 'Venue Not UID',
+		];
+		$sut        = $this->make_instance( 'event-uid' );
 
+		$first_post_id = $sut->import_next_row();
+
+		$this->assertNotFalse( $first_post_id );
+		$this->assertEquals( $venue['id'], get_post_meta( $first_post_id, '_EventVenueID', true ) );
 	}
 
 	/**
@@ -155,18 +180,14 @@ class File_Importer_Events_UIDTest extends File_Importer_EventsTest {
 	 */
 	public function it_should_add_a_organizer_using_the_organizer_uid() {
 		$organizer = $this->get_organizer_name_and_id();
-
 		$this->data        = [
-			'uid_1'           => 'mt22bluetest',
-			'name_1'          => 'Modern Tribe\'s Excellent Adventure',
+			'uid_1'           => 'ec22bluetest',
+			'name_1'          => 'TEC\'s Excellent Adventure',
 			'start_date_1'    => '11/19/21',
 			'end_date_1'      => '11/19/21',
-			//'all_day_1' => 'false',
 			'description_1'   => 'Updated event description',
 			'organizer_uid_1' => 'organizerUID1',
 		];
-		$this->field_map[] = 'event_uid';
-
 		$sut = $this->make_instance( 'event-uid' );
 
 		$first_post_id = $sut->import_next_row();

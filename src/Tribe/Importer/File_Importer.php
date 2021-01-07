@@ -42,7 +42,17 @@ abstract class Tribe__Events__Importer__File_Importer {
 	/**
 	 * @var string The meta field name to store and retrieve the manually defined uid.
 	 */
-	protected $uid;
+	protected $event_uid_meta_key = '_tribe_event_csv_uid';
+
+	/**
+	 * @var string The meta field name to store and retrieve the manually defined uid.
+	 */
+	protected $venue_uid_meta_key = '_tribe_venue_csv_uid';
+
+	/**
+	 * @var string The meta field name to store and retrieve the manually defined uid.
+	 */
+	protected $organizer_uid_meta_key = '_tribe_organizer_csv_uid';
 
 	/**
 	 * @param string                         $type
@@ -329,6 +339,59 @@ abstract class Tribe__Events__Importer__File_Importer {
 		remove_filter( 'posts_search', [ $this, 'filter_query_for_title_search' ], 10 );
 
 		return empty( $ids ) ? 0 : reset( $ids );
+	}
+
+	/**
+	 *
+	 *
+	 * @since TBD
+	 *
+	 * @param        $uid
+	 * @param string $post_type
+	 *
+	 * @return bool|mixed
+	 */
+	protected function match_uid( $uid, $uid_meta, $post_type = Tribe__Events__Main::POSTTYPE ) {
+
+		//todo match by uid and if found return
+		// method to get by uid
+		// return in this method
+		// Base query - only the meta query will be different
+		$query_args = array(
+			'post_type'        => $post_type,
+			'fields'           => 'ids',
+			'posts_per_page'   => 1,
+			'suppress_filters' => false,
+			'post_status'      => 'any',
+		);
+
+		$meta_query = array(
+			array(
+				'key'     => $uid_meta,
+				'value'   => $uid,
+				'compare' => '=',
+			),
+		);
+
+		$query_args['meta_query']                   = $meta_query;
+		$query_args['tribe_remove_date_filters']    = true;
+		$query_args['tribe_suppress_query_filters'] = true;
+
+		/**
+		 * Add an option to change the $matches that are duplicates.
+		 *
+		 * @since TBD
+		 *
+		 * @param array $matches    Array with the duplicate matches
+		 * @param array $query_args Array with the arguments used to get the posts.
+		 */
+		$matches = (array) apply_filters( 'tribe_events_import_event_uid_duplicate_matches', get_posts( $query_args ), $query_args );
+
+		if ( empty( $matches ) ) {
+			return false;
+		}
+
+		return reset( $matches );
 	}
 
 	public function filter_query_for_title_search( $search, WP_Query $wp_query ) {
