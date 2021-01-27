@@ -158,6 +158,30 @@ class Assets extends \tad_DI52_ServiceProvider {
 				'priority' => 15,
 			]
 		);
+		
+		tribe_asset(
+			$plugin,
+			'tribe-events-widgets-v2-featured-venue-skeleton',
+			'widget-featured-venue-skeleton.css',
+			null,
+			[
+				'priority' => 15,
+			]
+		);
+
+		tribe_asset(
+			$plugin,
+			'tribe-events-widgets-v2-featured-venue-full',
+			'widget-featured-venue-full.css',
+			[
+				'tribe-common-full-style',
+				'tribe-events-widgets-v2-featured-venue-skeleton',
+			],
+			null,
+			[
+				'priority' => 15,
+			]
+		);
 
 		$bootstrap_datepicker_dependencies = [ 'jquery' ];
 		if ( static::datepicker_no_conflict_mode() ) {
