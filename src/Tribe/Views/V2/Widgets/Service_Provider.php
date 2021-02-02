@@ -47,6 +47,8 @@ class Service_Provider extends \tad_DI52_ServiceProvider {
 			return;
 		}
 
+		$this->container->singleton( Template_Helpers::class, Template_Helpers::class );
+
 		// These hooks always run to provide widget compatibility for v1 to v2 and reverse.
 		$this->register_compatibility();
 

@@ -94,6 +94,8 @@ abstract class Widget_Abstract extends \Tribe\Widget\Widget_Abstract {
 			$arguments['admin_fields'][ $field_name ] = $this->get_admin_data( $arguments, $field_name, $field );
 		}
 
+		$arguments['helpers'] = tribe( Template_Helpers::class );
+
 		return $arguments;
 	}
 
