@@ -134,11 +134,40 @@ class Assets extends \tad_DI52_ServiceProvider {
 				'groups'       => [ static::$group_key ],
 			]
 		);
+		
+		tribe_asset(
+			$plugin,
+			'tribe-events-widgets-v2-common-skeleton',
+			'widget-events-common-skeleton.css',
+			[
+				'tribe-common-skeleton-style',
+			],
+			null,
+			[
+				'priority' => 15,
+			]
+		);
+		
+		tribe_asset(
+			$plugin,
+			'tribe-events-widgets-v2-common-full',
+			'widget-events-common-full.css',
+			[
+				'tribe-events-widgets-v2-common-skeleton',
+			],
+			null,
+			[
+				'priority' => 15,
+			]
+		);
 
 		tribe_asset(
 			$plugin,
 			'tribe-events-widgets-v2-events-list-skeleton',
 			'widget-events-list-skeleton.css',
+			[
+				'tribe-events-widgets-v2-common-skeleton',
+			],
 			null,
 			[
 				'priority' => 15,
@@ -152,6 +181,7 @@ class Assets extends \tad_DI52_ServiceProvider {
 			[
 				'tribe-common-full-style',
 				'tribe-events-widgets-v2-events-list-skeleton',
+				'tribe-events-widgets-v2-common-full',
 			],
 			null,
 			[
