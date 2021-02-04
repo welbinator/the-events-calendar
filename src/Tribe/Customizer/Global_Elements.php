@@ -37,7 +37,7 @@ final class Tribe__Events__Customizer__Global_Elements extends Tribe__Customizer
 		/**
 		 * Allows filtering the CSS template with full knowledge of the Global Elements section and the current Customizer instance.
 		 *
-		 * @since TBD
+		 * @since 5.3.1
 		 *
 		 * @param string                     $template   The CSS template, as produced by the Global Elements.
 		 * @param Tribe__Customizer__Section $this       The Global Elements section.
@@ -215,6 +215,32 @@ final class Tribe__Events__Customizer__Global_Elements extends Tribe__Customizer
 
 		$customizer->add_setting_name( $customizer->get_setting_name( 'accent_color', $section ) );
 
+		// Custom Map Pins are not supported with basic embeds.
+		if ( ! tribe_is_using_basic_gmaps_api() ) {
+
+			$manager->add_setting(
+				$customizer->get_setting_name( 'map_pin', $section ),
+				[
+					'default'           => $this->get_default( 'map_pin' ),
+					'type'              => 'option',
+					'sanitize_callback' => 'esc_url_raw',
+				]
+			);
+
+			$manager->add_control(
+				new WP_Customize_Image_Control(
+					$manager,
+					$customizer->get_setting_name( 'map_pin', $section ),
+					[
+						'default' => $this->get_default( 'button_color' ),
+						'label'   => esc_html__( 'Map Pin', 'the-events-calendar' ),
+						'section' => $section->id,
+						'priority' => 20,
+					]
+				)
+			);
+		}
+
 		// Old stuff for backwards compatibility.
 		if ( tribe_events_views_v2_is_enabled() ) {
 			return;
@@ -266,37 +292,8 @@ final class Tribe__Events__Customizer__Global_Elements extends Tribe__Customizer
 			)
 		);
 
-		// Custom Map Pins are not supported with basic embeds.
-		if ( ! tribe_is_using_basic_gmaps_api() ) {
-
-			$manager->add_setting(
-				$customizer->get_setting_name( 'map_pin', $section ),
-				[
-					'default'           => $this->get_default( 'map_pin' ),
-					'type'              => 'option',
-					'sanitize_callback' => 'esc_url_raw',
-				]
-			);
-
-			$manager->add_control(
-				new WP_Customize_Image_Control(
-					$manager,
-					$customizer->get_setting_name( 'map_pin', $section ),
-					[
-						'default' => $this->get_default( 'button_color' ),
-						'label'   => esc_html__( 'Map Pin', 'the-events-calendar' ),
-						'section' => $section->id,
-						'priority' => 20,
-					]
-				)
-			);
-		}
-
 		// Introduced to make Selective Refresh have less code duplication
 		$customizer->add_setting_name( $customizer->get_setting_name( 'filterbar_color', $section ) );
 		$customizer->add_setting_name( $customizer->get_setting_name( 'button_color', $section ) );
-
-		// To add Live Edit Pins will require some JS refactor to be able to work
-		// $customizer->add_setting_name( $customizer->get_setting_name( 'map_pin', $section ) );
 	}
 }

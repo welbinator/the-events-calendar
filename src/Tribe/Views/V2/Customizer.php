@@ -2,19 +2,20 @@
 /**
  * Handles Views v2 Customizer settings.
  *
- * @since   TBD
+ * @since   5.3.1
  *
  * @package Tribe\Events\Views\V2
  */
 
 namespace Tribe\Events\Views\V2;
-use \WP_Customize_Control as Control;
-use \WP_Customize_Color_Control as Color_Control;
+use Tribe__Events__Main as TEC;
+use WP_Customize_Color_Control as Color_Control;
+use WP_Customize_Control as Control;
 
 /**
  * Class Customizer
  *
- * @since   TBD
+ * @since   5.3.1
  *
  * @package Tribe\Events\Views\V2
  */
@@ -22,7 +23,7 @@ class Customizer {
 	/**
 	 * Adds new settings/controls to the Global Elements section via the hook in common.
 	 *
-	 * @since TBD
+	 * @since 5.3.1
 	 *
 	 * @param \Tribe__Customizer__Section $section    The Global Elements Customizer section.
 	 * @param WP_Customize_Manager        $manager    The settings manager.
@@ -69,7 +70,7 @@ class Customizer {
 				$customizer->get_setting_name( 'event_date_time_color', $section ),
 				[
 					'label'       => esc_html__( 'Event Date and Time', 'the-events-calendar' ),
-					'description' => esc_html__( 'Main date and time display on views and single event pages.', 'the-events-calendar' ),
+					'description' => esc_html__( 'Main date and time display on views and single event pages', 'the-events-calendar' ),
 					'section'     => $section->id,
 					'priority'    => 8,
 				]
@@ -94,7 +95,7 @@ class Customizer {
 				[
 					'label'       => 'Background Color',
 					'section'     => $section->id,
-					'description' => esc_html__( 'All calendar and event pages.', 'the-events-calendar' ),
+					'description' => esc_html__( 'All calendar and event pages', 'the-events-calendar' ),
 					'type'        => 'radio',
 					'priority'    => 12,
 					'choices'     => [
@@ -142,7 +143,7 @@ class Customizer {
 	/**
 	 * Adds new settings/controls to the Single Events section via the hook in common.
 	 *
-	 * @since TBD
+	 * @since 5.3.1
 	 *
 	 * @param \Tribe__Customizer__Section $section    The Single Events Customizer section.
 	 * @param WP_Customize_Manager        $manager    The settings manager.
@@ -169,9 +170,8 @@ class Customizer {
 				$manager,
 				$customizer->get_setting_name( 'post_title_color_choice', $section ),
 				[
-					'label'       => esc_html__( 'Event Title Color', 'the-events-calendar' ),
+					'label'       => esc_html__( 'Event Title', 'the-events-calendar' ),
 					'section'     => $section->id,
-					'description' => esc_html__( 'All calendar and event pages.', 'the-events-calendar' ),
 					'type'        => 'radio',
 					'priority'    => 5,
 					'choices'     => [
@@ -211,7 +211,7 @@ class Customizer {
 	/**
 	 * Filters the Global Elements section CSS template to add Views v2 related style templates to it.
 	 *
-	 * @since TBD
+	 * @since 5.3.1
 	 *
 	 * @param string                      $css_template The CSS template, as produced by the Global Elements.
 	 * @param \Tribe__Customizer__Section $section      The Global Elements section.
@@ -671,7 +671,7 @@ class Customizer {
 	/**
 	 * Filters the Single Event section CSS template to add Views v2 related style templates to it.
 	 *
-	 * @since TBD
+	 * @since 5.3.1
 	 *
 	 * @param string                      $css_template The CSS template, as produced by the Single Event.
 	 * @param \Tribe__Customizer__Section $section      The Single Event section.
@@ -693,5 +693,14 @@ class Customizer {
 		}
 
 		return $css_template;
+	}
+
+	/**
+	 * Enqueues Customizer controls styles specific to Views v2 components.
+	 *
+	 * @since TBD
+	 */
+	public function enqueue_customizer_controls_styles() {
+		tribe_asset_enqueue( 'tribe-customizer-views-v2-controls' );
 	}
 }
