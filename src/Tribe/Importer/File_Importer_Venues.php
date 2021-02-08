@@ -12,6 +12,16 @@ class Tribe__Events__Importer__File_Importer_Venues extends Tribe__Events__Impor
 	protected $uid = '_tribe_venue_uid';
 
 	protected function match_existing_post( array $record ) {
+
+		$uid        = $this->get_value_by_key( $record, 'tribe_venue_uid' );
+		//todo make this into a method
+		if ( $uid ) {
+			$uid_match = $this->match_uid( $uid, $this->venue_uid_meta_key );
+			if ( $uid_match ) {
+				return $uid_match;
+			}
+		}
+
 		$name = $this->get_value_by_key( $record, 'venue_name' );
 		$id   = $this->find_matching_post_id( $name, Tribe__Events__Main::VENUE_POST_TYPE );
 

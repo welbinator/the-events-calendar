@@ -131,7 +131,6 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 		//todo save the uid meta
 		//todo change this to use the method
 		if ( isset( $event[ 'tribe_event_csv_uid' ] ) ) {
-			var_dump( $event['tribe_event_csv_uid']);
 			update_metadata( 'post', $post_id, $this->event_uid_meta_key, $event['tribe_event_csv_uid'] );
 		}
 
@@ -429,7 +428,24 @@ class Tribe__Events__Importer__File_Importer_Events extends Tribe__Events__Impor
 
 		$uid = $this->get_value_by_key( $record, 'tribe_organizer_uid' );
 		//todo make this into a method and support the space and comma seperated
+		var_dump($record);
+		var_dump($uid);
 		if ( $uid ) {
+			if ( $maybe_spaced_organizers = $this->organizer_is_space_separated_ids( $uid ) ) {
+				$uid_match = $this->match_uid( $maybe_spaced_organizers, $this->organizer_uid_meta_key, Tribe__Events__Main::ORGANIZER_POST_TYPE );
+							if ( $uid_match ) {
+								return $uid_match;
+							}
+			}
+
+			// Check for $separator list
+			if ( $maybe_separated_organizers = $this->maybe_organizer_is_separated_list( $uid ) ) {
+				$uid_match = $this->match_uid( $maybe_spaced_organizers, $this->organizer_uid_meta_key, Tribe__Events__Main::ORGANIZER_POST_TYPE );
+							if ( $uid_match ) {
+								return $uid_match;
+							}
+			}
+
 			$uid_match = $this->match_uid( $uid, $this->organizer_uid_meta_key, Tribe__Events__Main::ORGANIZER_POST_TYPE );
 			if ( $uid_match ) {
 				return $uid_match;

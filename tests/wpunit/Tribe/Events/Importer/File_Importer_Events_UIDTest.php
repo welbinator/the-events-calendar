@@ -53,9 +53,9 @@ class File_Importer_Events_UIDTest extends File_Importer_EventsTest {
 	public function get_organizer_name_and_id() {
 		$organizer_name = 'Organizer Import 1';
 		$organizer_args = [
-			'_OrganizerEmail'          => '6500 Springfield Mall',
-			'_OrganizerWebsite'        => 'Springfield',
-			'_OrganizerPhone'          => 'VA',
+			'_OrganizerEmail'          => 'organizer_1@gmail.com',
+			'_OrganizerWebsite'        => 'https://organizer-1.com',
+			'_OrganizerPhone'          => '201-457-5455',
 			'_tribe_organizer_csv_uid' => 'organizerUID1',
 		];
 		$organizer      = $this->factory()->organizer->create( [ 'post_title' => $organizer_name, 'meta_input' => $organizer_args ] );
@@ -179,8 +179,8 @@ class File_Importer_Events_UIDTest extends File_Importer_EventsTest {
 	 * @test
 	 */
 	public function it_should_add_a_organizer_using_the_organizer_uid() {
-		$organizer = $this->get_organizer_name_and_id();
-		$this->data        = [
+		$organizer  = $this->get_organizer_name_and_id();
+		$this->data = [
 			'uid_1'           => 'ec22bluetest',
 			'name_1'          => 'TEC\'s Excellent Adventure',
 			'start_date_1'    => '11/19/21',
@@ -188,7 +188,7 @@ class File_Importer_Events_UIDTest extends File_Importer_EventsTest {
 			'description_1'   => 'Updated event description',
 			'organizer_uid_1' => 'organizerUID1',
 		];
-		$sut = $this->make_instance( 'event-uid' );
+		$sut        = $this->make_instance( 'event-uid' );
 
 		$first_post_id = $sut->import_next_row();
 
@@ -200,14 +200,54 @@ class File_Importer_Events_UIDTest extends File_Importer_EventsTest {
 	 * @test
 	 */
 	public function it_should_add_multiple_organizers_using_the_organizer_uid() {
+		$organizer        = $this->get_organizer_name_and_id();
+		$organizer_name_2 = 'Organizer Import 2';
+		$organizer_args_2 = [
+			'_OrganizerEmail'          => 'organizer_2@gmail.com',
+			'_OrganizerWebsite'        => 'https://organizer-2.com',
+			'_OrganizerPhone'          => '703-457-5455',
+			'_tribe_organizer_csv_uid' => 'organizerUID2',
+		];
+		$organizer_2      = $this->factory()->organizer->create( [ 'post_title' => $organizer_name_2, 'meta_input' => $organizer_args_2 ] );
 
+		$this->data = [
+			'uid_1'           => 'ec22bluetest',
+			'name_1'          => 'TEC\'s Excellent Adventure',
+			'start_date_1'    => '11/19/21',
+			'end_date_1'      => '11/19/21',
+			'description_1'   => 'Updated event description',
+			'organizer_uid_1' => 'organizerUID1,organizerUID2',
+		];
+		$sut        = $this->make_instance( 'event-uid' );
+
+		$first_post_id = $sut->import_next_row();
+
+		$this->assertNotFalse( $first_post_id );
+
+		var_dump(get_post_meta( $first_post_id, '_EventOrganizerID', true ));
+		$this->assertEquals( $organizer['id'], get_post_meta( $first_post_id, '_EventOrganizerID', true ) );
 	}
 
 	/**
 	 * @test
 	 */
 	public function it_should_add_a_organizer_using_the_organizer_uid_even_when_organizer_id_included() {
+		$organizer  = $this->get_organizer_name_and_id();
+		$this->data = [
+			'uid_1'            => 'ec22bluetest',
+			'name_1'           => 'TEC\'s Excellent Adventure',
+			'start_date_1'     => '11/19/21',
+			'end_date_1'       => '11/19/21',
+			'description_1'    => 'Updated event description',
+			'organizer_uid_1'  => 'organizerUID1',
+			'organizer_name_1' => 'Organizer Not UID',
+		];
+		$sut        = $this->make_instance( 'event-uid' );
 
+		$first_post_id = $sut->import_next_row();
+
+		$this->assertNotFalse( $first_post_id );
+		$this->assertEquals( $organizer['id'], get_post_meta( $first_post_id, '_EventOrganizerID', true ) );
 	}
 
 	/**

@@ -13,6 +13,16 @@ class Tribe__Events__Importer__File_Importer_Organizers extends Tribe__Events__I
 	protected $uid = '_tribe_organizer_uid';
 
 	protected function match_existing_post( array $record ) {
+
+		$uid        = $this->get_value_by_key( $record, 'tribe_organizer_uid' );
+		//todo make this into a method
+		if ( $uid ) {
+			$uid_match = $this->match_uid( $uid, $this->organizer_uid_meta_key );
+			if ( $uid_match ) {
+				return $uid_match;
+			}
+		}
+
 		$name = $this->get_value_by_key( $record, 'organizer_name' );
 		$id   = $this->find_matching_post_id( $name, Tribe__Events__Main::ORGANIZER_POST_TYPE );
 

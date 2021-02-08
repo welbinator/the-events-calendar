@@ -353,6 +353,8 @@ abstract class Tribe__Events__Importer__File_Importer {
 	 */
 	protected function match_uid( $uid, $uid_meta, $post_type = Tribe__Events__Main::POSTTYPE ) {
 
+		$uid = is_array( $uid ) ? $uid : [ $uid ];
+
 		//todo match by uid and if found return
 		// method to get by uid
 		// return in this method
@@ -369,7 +371,7 @@ abstract class Tribe__Events__Importer__File_Importer {
 			array(
 				'key'     => $uid_meta,
 				'value'   => $uid,
-				'compare' => '=',
+				'compare' => 'IN'
 			),
 		);
 
