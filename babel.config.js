@@ -1,6 +1,6 @@
-{
+module.exports = {
 	"presets": [
-		[ "env", {
+		[ "@babel/preset-env", {
 			"modules": false,
 			"targets": {
 				"browsers": [
@@ -16,35 +16,31 @@
 					"> 1%"
 				]
 			}
+		} ],
+		[ "@babel/preset-react", {
+			"pragma": "wp.element.createElement"
 		} ]
 	],
 	"plugins": [
-		"transform-class-properties",
-		"syntax-class-properties",
-		"transform-object-rest-spread",
-		"transform-async-to-generator",
-		["transform-runtime", {
-			"polyfill": false,
+		[ "@babel/plugin-proposal-class-properties", { "loose": true } ],
+		"@babel/plugin-proposal-object-rest-spread",
+		"@babel/plugin-transform-async-to-generator",
+		["@babel/plugin-transform-runtime", {
 			"regenerator": true
 		}],
-		[ "transform-react-jsx", {
-			"pragma": "wp.element.createElement"
-		} ],
 		["lodash"]
 	],
 	"env": {
 		"default": {
 			"plugins": [
-				"transform-class-properties",
-				"syntax-class-properties",
-				"import-glob"
+				"@babel/plugin-proposal-class-properties",
+				"babel-plugin-import-glob"
 			]
 		},
 		"test": {
 			"presets": [ "env" ],
 			"plugins": [
-				"transform-class-properties",
-				"syntax-class-properties"
+				"@babel/plugin-proposal-class-properties",
 			]
 		},
 		"gettext": {
